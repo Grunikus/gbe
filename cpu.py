@@ -2,9 +2,10 @@ from memory import Memory
 from opcodes import ADD_A_B, ADD_A_C, ADD_A_D, ADD_A_E, ADD_A_H, ADD_A_L, ADD_A_HL, ADD_A_A
 from opcodes import ADC_A_B, ADC_A_C, ADC_A_D, ADC_A_E, ADC_A_H, ADC_A_L, ADC_A_HL, ADC_A_A
 
-FLAG_ZERO = 0b10000000
-FLAG_SUBS = 0b01000000
-FLAG_CARR = 0b00010000
+FLAG_Z = 0b10000000  # Zero Flag
+FLAG_N = 0b01000000  # Subtract Flag
+FLAG_H = 0b00100000  # Half Carry Flag
+FLAG_C = 0b00010000  # Carry Flag
 
 START_PC = 0x0100
 START_SP = 0xFFFE
@@ -56,11 +57,11 @@ class CPU:
     def _update_flags(self, result, subtraction=False):
         self.registers['F'] = 0x00
         if result & 0xFF == 0:
-            self.registers['F'] |= FLAG_ZERO
+            self.registers['F'] |= FLAG_Z
         if subtraction:
-            self.registers['F'] |= FLAG_SUBS
+            self.registers['F'] |= FLAG_N
         if result > 0xFF:
-            self.registers['F'] |= FLAG_CARR
+            self.registers['F'] |= FLAG_C
 
     def _add_a(self, value):
         result = self.registers['A'] + value
@@ -76,7 +77,7 @@ class CPU:
         self._add_a(memory_value)
 
     def _adc_a(self, value):
-        carry = (self.registers['F'] & FLAG_CARR) >> 4  # Extract the carry flag
+        carry = (self.registers['F'] & FLAG_C) >> 4  # Extract the carry flag
         result = self.registers['A'] + value + carry
         self.registers['A'] = result & 0xFF
         self._update_flags(result)

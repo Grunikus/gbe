@@ -1,5 +1,5 @@
 import unittest
-from cpu import CPU, FLAG_ZERO, FLAG_CARR, FLAG_SUBS
+from cpu import CPU, FLAG_Z, FLAG_C, FLAG_N
 from memory import Memory
 import opcodes
 
@@ -81,8 +81,8 @@ class TestCPU(unittest.TestCase):
             self.cpu.step()
             # Check result
             self.assertEqual(self.cpu.registers['A'], expected_result)
-            self.assertEqual(self.cpu.registers['F'] & FLAG_ZERO, 0x00)
-            self.assertEqual(self.cpu.registers['F'] & FLAG_SUBS, 0x00)
+            self.assertEqual(self.cpu.registers['F'] & FLAG_Z, 0x00)
+            self.assertEqual(self.cpu.registers['F'] & FLAG_N, 0x00)
 
     def test_adc_hl(self):
         addr_high = 0x00
@@ -102,8 +102,8 @@ class TestCPU(unittest.TestCase):
 
         # Check result
         self.assertEqual(self.cpu.registers['A'], 0x04)  # A = 1 + 2 + 1 (carry)
-        self.assertEqual(self.cpu.registers['F'] & FLAG_ZERO, 0x00)
-        self.assertEqual(self.cpu.registers['F'] & FLAG_SUBS, 0x00)
+        self.assertEqual(self.cpu.registers['F'] & FLAG_Z, 0x00)
+        self.assertEqual(self.cpu.registers['F'] & FLAG_N, 0x00)
 
 if __name__ == '__main__':
     unittest.main()
