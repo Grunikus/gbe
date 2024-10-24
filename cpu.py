@@ -1,6 +1,10 @@
 from memory import Memory
-from opcodes import ADD_A_B, ADD_A_C, ADD_A_D, ADD_A_E, ADD_A_H, ADD_A_L, ADD_A_HL, ADD_A_A
-from opcodes import ADC_A_B, ADC_A_C, ADC_A_D, ADC_A_E, ADC_A_H, ADC_A_L, ADC_A_HL, ADC_A_A
+from opcodes import (
+    ADD_A_B, ADD_A_C, ADD_A_D, ADD_A_E, ADD_A_H, ADD_A_L, ADD_A_HL, ADD_A_A,
+    ADC_A_B, ADC_A_C, ADC_A_D, ADC_A_E, ADC_A_H, ADC_A_L, ADC_A_HL, ADC_A_A,
+    SUB_A_B, SUB_A_C, SUB_A_D, SUB_A_E, SUB_A_H, SUB_A_L, SUB_A_HL, SUB_A_A,
+    SBC_A_B, SBC_A_C, SBC_A_D, SBC_A_E, SBC_A_H, SBC_A_L, SBC_A_HL, SBC_A_A,
+)
 
 FLAG_Z = 0b10000000  # Zero Flag
 FLAG_N = 0b01000000  # Subtract Flag
@@ -40,6 +44,26 @@ INSTRUCTION_MAP.update({
     ADC_A_HL:   lambda self: self.adc_hl(),
     ADC_A_A:    lambda self: self.adc_register(REGISTER_A),
 })
+INSTRUCTION_MAP.update({
+    SUB_A_B:    lambda self: self.sub_register(REGISTER_B),
+    SUB_A_C:    lambda self: self.sub_register(REGISTER_C),
+    SUB_A_D:    lambda self: self.sub_register(REGISTER_D),
+    SUB_A_E:    lambda self: self.sub_register(REGISTER_E),
+    SUB_A_H:    lambda self: self.sub_register(REGISTER_H),
+    SUB_A_L:    lambda self: self.sub_register(REGISTER_L),
+    SUB_A_HL:   lambda self: self.sub_hl(),
+    SUB_A_A:    lambda self: self.sub_register(REGISTER_A),
+})
+INSTRUCTION_MAP.update({
+    SBC_A_B:    lambda self: self.sbc_register(REGISTER_B),
+    SBC_A_C:    lambda self: self.sbc_register(REGISTER_C),
+    SBC_A_D:    lambda self: self.sbc_register(REGISTER_D),
+    SBC_A_E:    lambda self: self.sbc_register(REGISTER_E),
+    SBC_A_H:    lambda self: self.sbc_register(REGISTER_H),
+    SBC_A_L:    lambda self: self.sbc_register(REGISTER_L),
+    SBC_A_HL:   lambda self: self.sbc_hl(),
+    SBC_A_A:    lambda self: self.sbc_register(REGISTER_A),
+})
 
 class CPU:
     def __init__(self, memory: Memory):
@@ -58,7 +82,6 @@ class CPU:
         opcode = self.fetch_instruction()
         INSTRUCTION_MAP[opcode](self)
 
-    # Instruction implementations
     def _update_flags(self, result, subtraction=False):
         self.registers[REGISTER_F] = 0x00
         if result & 0xFF == 0:
@@ -73,6 +96,24 @@ class CPU:
         self.registers[REGISTER_A] = result & 0xFF
         self._update_flags(result)
 
+    def _adc_a(self, value):
+        carry = (self.registers[REGISTER_F] & FLAG_C) >> 4  # Extract the carry flag
+        result = self.registers[REGISTER_A] + value + carry
+        self.registers[REGISTER_A] = result & 0xFF
+        self._update_flags(result)
+
+    def _sub_a(self, value):
+        result = self.registers[REGISTER_A] - value
+        self.registers[REGISTER_A] = result & 0xFF
+        self._update_flags(result, subtraction=True)
+
+    def _sbc_a(self, value):
+        carry = (self.registers[REGISTER_F] & FLAG_C) >> 4  # Extract the carry flag
+        result = self.registers[REGISTER_A] - value - carry
+        self.registers[REGISTER_A] = result & 0xFF
+        self._update_flags(result, subtraction=True)
+
+    # Instruction implementations
     def add_register(self, register):
         self._add_a( self.registers[register] )
 
@@ -81,12 +122,6 @@ class CPU:
         memory_value = self.memory.read_byte(address)
         self._add_a(memory_value)
 
-    def _adc_a(self, value):
-        carry = (self.registers[REGISTER_F] & FLAG_C) >> 4  # Extract the carry flag
-        result = self.registers[REGISTER_A] + value + carry
-        self.registers[REGISTER_A] = result & 0xFF
-        self._update_flags(result)
-
     def adc_register(self, register):
         self._adc_a(self.registers[register])
 
@@ -94,3 +129,19 @@ class CPU:
         address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
         memory_value = self.memory.read_byte(address)
         self._adc_a(memory_value)
+
+    def sub_register(self, register):
+        self._sub_a(self.registers[register])
+
+    def sub_hl(self):
+        address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
+        memory_value = self.memory.read_byte(address)
+        self._sub_a(memory_value)
+
+    def sbc_register(self, register):
+        self._sbc_a(self.registers[register])
+
+    def sbc_hl(self):
+        address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
+        memory_value = self.memory.read_byte(address)
+        self._sbc_a(memory_value)
