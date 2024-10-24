@@ -7,9 +7,7 @@ class TestCPU(unittest.TestCase):
     def setUp(self):
         self.memory = Memory()
         self.cpu = CPU(self.memory)
-
-    def test_add_register(self):
-        # Set registers
+        # Initialize registers to the same values before each test
         self.cpu.registers[REGISTER_B] = 0x02
         self.cpu.registers[REGISTER_C] = 0x03
         self.cpu.registers[REGISTER_D] = 0x04
@@ -17,6 +15,7 @@ class TestCPU(unittest.TestCase):
         self.cpu.registers[REGISTER_H] = 0x06
         self.cpu.registers[REGISTER_L] = 0x07
 
+    def test_add_register(self):
         EXPECTED_RESULTS = {
             opcodes.ADD_A_A: 0x02,
             opcodes.ADD_A_B: 0x03,
@@ -55,14 +54,6 @@ class TestCPU(unittest.TestCase):
         self.assertEqual(self.cpu.registers[REGISTER_F], 0x00)
 
     def test_adc_register(self):
-        # Set registers
-        self.cpu.registers[REGISTER_B] = 0x02
-        self.cpu.registers[REGISTER_C] = 0x03
-        self.cpu.registers[REGISTER_D] = 0x04
-        self.cpu.registers[REGISTER_E] = 0x05
-        self.cpu.registers[REGISTER_H] = 0x06
-        self.cpu.registers[REGISTER_L] = 0x07
-
         EXPECTED_RESULTS = {
             opcodes.ADC_A_A: 0x03,  # A = 1 + 1 (A) + 1 (carry)
             opcodes.ADC_A_B: 0x04,  # A = 1 + 2 (B) + 1 (carry)
@@ -107,14 +98,6 @@ class TestCPU(unittest.TestCase):
         self.assertEqual(self.cpu.registers[REGISTER_F] & FLAG_N, 0x00)
 
     def test_sub_register(self):
-        # Set registers
-        self.cpu.registers[REGISTER_B] = 0x02
-        self.cpu.registers[REGISTER_C] = 0x03
-        self.cpu.registers[REGISTER_D] = 0x04
-        self.cpu.registers[REGISTER_E] = 0x05
-        self.cpu.registers[REGISTER_H] = 0x06
-        self.cpu.registers[REGISTER_L] = 0x07
-
         EXPECTED_RESULTS = {
             opcodes.SUB_A_A: 0x00,  # A - A = 1 - 1
             opcodes.SUB_A_B: 0xFF,  # A - B = 1 - 2
@@ -170,14 +153,6 @@ class TestCPU(unittest.TestCase):
         self.assertEqual(self.cpu.registers[REGISTER_F] & FLAG_N, FLAG_N)  # N flag should be set
 
     def test_sbc_register(self):
-        # Set registers
-        self.cpu.registers[REGISTER_B] = 0x02
-        self.cpu.registers[REGISTER_C] = 0x03
-        self.cpu.registers[REGISTER_D] = 0x04
-        self.cpu.registers[REGISTER_E] = 0x05
-        self.cpu.registers[REGISTER_H] = 0x06
-        self.cpu.registers[REGISTER_L] = 0x07
-
         EXPECTED_RESULTS = {
             opcodes.SBC_A_A: 0xFF,  # A = 1 - 1 - 1 (carry)
             opcodes.SBC_A_B: 0xFE,  # A = 1 - 2 - 1 (carry)
