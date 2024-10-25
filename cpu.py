@@ -82,66 +82,60 @@ class CPU:
         opcode = self.fetch_instruction()
         INSTRUCTION_MAP[opcode](self)
 
-    def _update_flags(self, result, subtraction=False):
+    def _read_hl(self):
+        address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
+        memory_value = self.memory.read_byte(address)
+        return memory_value
+
+    def _add_a(self, value, use_carry=False):
+        if use_carry: carry = (self.registers[REGISTER_F] & FLAG_C) >> 4  # Extract the carry flag
+        else: carry = 0
+        result = self.registers[REGISTER_A] + value + carry
+        self.registers[REGISTER_A] = result & 0xFF
         self.registers[REGISTER_F] = 0x00
         if result & 0xFF == 0:
             self.registers[REGISTER_F] |= FLAG_Z
-        if subtraction:
-            self.registers[REGISTER_F] |= FLAG_N
+        self.registers[REGISTER_F] &= ~FLAG_N
         if result > 0xFF:
             self.registers[REGISTER_F] |= FLAG_C
 
-    def _add_a(self, value):
-        result = self.registers[REGISTER_A] + value
-        self.registers[REGISTER_A] = result & 0xFF
-        self._update_flags(result)
-
-    def _adc_a(self, value):
-        carry = (self.registers[REGISTER_F] & FLAG_C) >> 4  # Extract the carry flag
-        result = self.registers[REGISTER_A] + value + carry
-        self.registers[REGISTER_A] = result & 0xFF
-        self._update_flags(result)
-
-    def _sub_a(self, value):
-        result = self.registers[REGISTER_A] - value
-        self.registers[REGISTER_A] = result & 0xFF
-        self._update_flags(result, subtraction=True)
-
-    def _sbc_a(self, value):
-        carry = (self.registers[REGISTER_F] & FLAG_C) >> 4  # Extract the carry flag
+    def _sub_a(self, value, use_carry=False):
+        if use_carry: carry = (self.registers[REGISTER_F] & FLAG_C) >> 4  # Extract the carry flag
+        else: carry = 0
         result = self.registers[REGISTER_A] - value - carry
         self.registers[REGISTER_A] = result & 0xFF
-        self._update_flags(result, subtraction=True)
+        self.registers[REGISTER_F] = 0x00
+        if result & 0xFF == 0:
+            self.registers[REGISTER_F] |= FLAG_Z
+        self.registers[REGISTER_F] |= FLAG_N
+        if result > 0xFF:
+            self.registers[REGISTER_F] |= FLAG_C
 
     # Instruction implementations
     def add_register(self, register):
         self._add_a( self.registers[register] )
 
     def add_hl(self):
-        address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
-        memory_value = self.memory.read_byte(address)
+        memory_value = self._read_hl()
         self._add_a(memory_value)
 
     def adc_register(self, register):
-        self._adc_a(self.registers[register])
+        self._add_a(self.registers[register], use_carry=True)
 
     def adc_hl(self):
-        address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
-        memory_value = self.memory.read_byte(address)
-        self._adc_a(memory_value)
+        memory_value = self._read_hl()
+        self._add_a(memory_value, use_carry=True)
 
     def sub_register(self, register):
         self._sub_a(self.registers[register])
 
     def sub_hl(self):
-        address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
-        memory_value = self.memory.read_byte(address)
+        memory_value = self._read_hl()
         self._sub_a(memory_value)
 
     def sbc_register(self, register):
-        self._sbc_a(self.registers[register])
+        self._sub_a(self.registers[register], use_carry=True)
 
     def sbc_hl(self):
-        address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
-        memory_value = self.memory.read_byte(address)
-        self._sbc_a(memory_value)
+        memory_value = self._read_hl()
+        self._sub_a(memory_value, use_carry=True)
