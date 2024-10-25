@@ -1,4 +1,5 @@
-# Opcode constants
+"""Opcode constants"""
+"""
 NOP          = 0x00  # No operation
 LD_BC_NN    = 0x01  # LD BC, nn
 LD_BC_A     = 0x02  # LD (BC), A
@@ -126,7 +127,7 @@ LD_A_H      = 0x7B  # LD A, H
 LD_A_L      = 0x7C  # LD A, L
 LD_A_HL     = 0x7D  # LD A, (HL)
 LD_A_A      = 0x7E  # LD A, A
-
+"""
 ADD_A_B     = 0x80  # ADD A, B
 ADD_A_C     = 0x81  # ADD A, C
 ADD_A_D     = 0x82  # ADD A, D
@@ -159,7 +160,6 @@ SBC_A_H     = 0x9C  # SBC A, H
 SBC_A_L     = 0x9D  # SBC A, L
 SBC_A_HL    = 0x9E  # SBC A, (HL)
 SBC_A_A     = 0x9F  # SBC A, A
-
 AND_B       = 0xA0  # AND B
 AND_C       = 0xA1  # AND C
 AND_D       = 0xA2  # AND D
@@ -176,6 +176,7 @@ XOR_H       = 0xAC  # XOR H
 XOR_L       = 0xAD  # XOR L
 XOR_HL      = 0xAE  # XOR (HL)
 XOR_A       = 0xAF  # XOR A
+"""
 OR_B        = 0xB0  # OR B
 OR_C        = 0xB1  # OR C
 OR_D        = 0xB2  # OR D
@@ -253,3 +254,4 @@ EI          = 0xFB  # EI
 CALL_NN     = 0xFC  # CALL nn
 CP_IMM      = 0xFD  # CP imm
 RST_38      = 0xFE  # RST 38H
+"""

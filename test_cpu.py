@@ -241,5 +241,92 @@ class TestCPU(unittest.TestCase):
         self.assertEqual(self.cpu.registers[REGISTER_A], expected_result)
         self.assertEqual(self.cpu.registers[REGISTER_F], expected_flags)
 
+    def test_and_register(self):
+        OPERANDS = {
+            opcodes.AND_A: REGISTER_A,
+            opcodes.AND_B: REGISTER_B,
+            opcodes.AND_C: REGISTER_C,
+            opcodes.AND_D: REGISTER_D,
+            opcodes.AND_E: REGISTER_E,
+            opcodes.AND_H: REGISTER_H,
+            opcodes.AND_L: REGISTER_L,
+        }
+        for opcode, register in OPERANDS.items():
+            OPERAND1 = 0x0F  # Example value
+            self.cpu.registers[REGISTER_A] = OPERAND1
+            OPERAND2 = self.cpu.registers[register]  # Value from the selected register
+
+            self.memory.write_byte(self.cpu.pc, opcode)
+            self.cpu.step()
+
+            expected_result = OPERAND1 & OPERAND2
+            expected_flags = FLAG_Z if expected_result == 0 else 0
+            expected_flags |= FLAG_H  # Half carry is always set for AND operations
+
+            self.assertEqual(self.cpu.registers[REGISTER_A], expected_result, f"{opcode=},{register=}")
+            self.assertEqual(self.cpu.registers[REGISTER_F], expected_flags, f"{opcode=},{register=}")
+
+    def test_xor_register(self):
+        OPERANDS = {
+            opcodes.XOR_A: REGISTER_A,
+            opcodes.XOR_B: REGISTER_B,
+            opcodes.XOR_C: REGISTER_C,
+            opcodes.XOR_D: REGISTER_D,
+            opcodes.XOR_E: REGISTER_E,
+            opcodes.XOR_H: REGISTER_H,
+            opcodes.XOR_L: REGISTER_L,
+        }
+
+        for opcode, register in OPERANDS.items():
+            OPERAND1 = 0x0F  # Example value
+            self.cpu.registers[REGISTER_A] = OPERAND1
+            OPERAND2 = self.cpu.registers[register]  # Value from the selected register
+
+            self.memory.write_byte(self.cpu.pc, opcode)
+            self.cpu.step()
+
+            expected_result = OPERAND1 ^ OPERAND2
+            expected_flags = FLAG_Z if expected_result == 0 else 0
+
+            self.assertEqual(self.cpu.registers[REGISTER_A], expected_result, f"{opcode=},{register=}")
+            self.assertEqual(self.cpu.registers[REGISTER_F], expected_flags, f"{opcode=},{register=}")
+
+    def test_and_hl(self):
+        opcode = opcodes.AND_HL
+        OPERAND1 = 0x0F  # Example value in register A
+        OPERAND2 = 0x03  # Example value in memory at HL
+
+        ADDR_HIGH, ADDR_LOW = 0x00, 0x10
+        self._initialize_memory_at_hl(ADDR_HIGH, ADDR_LOW, OPERAND2)
+
+        self.cpu.registers[REGISTER_A] = OPERAND1
+        self.memory.write_byte(self.cpu.pc, opcode)
+        self.cpu.step()
+
+        expected_result = OPERAND1 & OPERAND2
+        expected_flags = FLAG_Z if expected_result == 0 else 0
+        expected_flags |= FLAG_H  # Half carry is always set for AND operations
+
+        self.assertEqual(self.cpu.registers[REGISTER_A], expected_result)
+        self.assertEqual(self.cpu.registers[REGISTER_F], expected_flags)
+
+    def test_xor_hl(self):
+        opcode = opcodes.XOR_HL
+        OPERAND1 = 0x0F  # Example value in register A
+        OPERAND2 = 0x03  # Example value in memory at HL
+
+        ADDR_HIGH, ADDR_LOW = 0x00, 0x10
+        self._initialize_memory_at_hl(ADDR_HIGH, ADDR_LOW, OPERAND2)
+
+        self.cpu.registers[REGISTER_A] = OPERAND1
+        self.memory.write_byte(self.cpu.pc, opcode)
+        self.cpu.step()
+
+        expected_result = OPERAND1 ^ OPERAND2
+        expected_flags = FLAG_Z if expected_result == 0 else 0
+
+        self.assertEqual(self.cpu.registers[REGISTER_A], expected_result)
+        self.assertEqual(self.cpu.registers[REGISTER_F], expected_flags)
+
 if __name__ == '__main__':
     unittest.main()
