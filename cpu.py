@@ -27,64 +27,64 @@ REGISTER_L = 7
 
 INSTRUCTION_MAP = {}
 INSTRUCTION_MAP.update({
-    ADD_A_A:    lambda self: self.add_register(REGISTER_A),
-    ADD_A_B:    lambda self: self.add_register(REGISTER_B),
-    ADD_A_C:    lambda self: self.add_register(REGISTER_C),
-    ADD_A_D:    lambda self: self.add_register(REGISTER_D),
-    ADD_A_E:    lambda self: self.add_register(REGISTER_E),
-    ADD_A_H:    lambda self: self.add_register(REGISTER_H),
-    ADD_A_L:    lambda self: self.add_register(REGISTER_L),
-    ADD_A_HL:   lambda self: self.add_hl(),
+    ADD_A_A:    lambda self: self._add_a(self.registers[REGISTER_A]),
+    ADD_A_B:    lambda self: self._add_a(self.registers[REGISTER_B]),
+    ADD_A_C:    lambda self: self._add_a(self.registers[REGISTER_C]),
+    ADD_A_D:    lambda self: self._add_a(self.registers[REGISTER_D]),
+    ADD_A_E:    lambda self: self._add_a(self.registers[REGISTER_E]),
+    ADD_A_H:    lambda self: self._add_a(self.registers[REGISTER_H]),
+    ADD_A_L:    lambda self: self._add_a(self.registers[REGISTER_L]),
+    ADD_A_HL:   lambda self: self._add_a(self._read_hl()),
 })
 INSTRUCTION_MAP.update({
-    ADC_A_A:    lambda self: self.adc_register(REGISTER_A),
-    ADC_A_B:    lambda self: self.adc_register(REGISTER_B),
-    ADC_A_C:    lambda self: self.adc_register(REGISTER_C),
-    ADC_A_D:    lambda self: self.adc_register(REGISTER_D),
-    ADC_A_E:    lambda self: self.adc_register(REGISTER_E),
-    ADC_A_H:    lambda self: self.adc_register(REGISTER_H),
-    ADC_A_L:    lambda self: self.adc_register(REGISTER_L),
-    ADC_A_HL:   lambda self: self.adc_hl(),
+    ADC_A_A:    lambda self: self._add_a(self.registers[REGISTER_A], use_carry=True),
+    ADC_A_B:    lambda self: self._add_a(self.registers[REGISTER_B], use_carry=True),
+    ADC_A_C:    lambda self: self._add_a(self.registers[REGISTER_C], use_carry=True),
+    ADC_A_D:    lambda self: self._add_a(self.registers[REGISTER_D], use_carry=True),
+    ADC_A_E:    lambda self: self._add_a(self.registers[REGISTER_E], use_carry=True),
+    ADC_A_H:    lambda self: self._add_a(self.registers[REGISTER_H], use_carry=True),
+    ADC_A_L:    lambda self: self._add_a(self.registers[REGISTER_L], use_carry=True),
+    ADC_A_HL:   lambda self: self._add_a(self._read_hl(), use_carry=True),
 })
 INSTRUCTION_MAP.update({
-    SUB_A_A:    lambda self: self.sub_register(REGISTER_A),
-    SUB_A_B:    lambda self: self.sub_register(REGISTER_B),
-    SUB_A_C:    lambda self: self.sub_register(REGISTER_C),
-    SUB_A_D:    lambda self: self.sub_register(REGISTER_D),
-    SUB_A_E:    lambda self: self.sub_register(REGISTER_E),
-    SUB_A_H:    lambda self: self.sub_register(REGISTER_H),
-    SUB_A_L:    lambda self: self.sub_register(REGISTER_L),
-    SUB_A_HL:   lambda self: self.sub_hl(),
+    SUB_A_A:    lambda self: self._sub_a(self.registers[REGISTER_A]),
+    SUB_A_B:    lambda self: self._sub_a(self.registers[REGISTER_B]),
+    SUB_A_C:    lambda self: self._sub_a(self.registers[REGISTER_C]),
+    SUB_A_D:    lambda self: self._sub_a(self.registers[REGISTER_D]),
+    SUB_A_E:    lambda self: self._sub_a(self.registers[REGISTER_E]),
+    SUB_A_H:    lambda self: self._sub_a(self.registers[REGISTER_H]),
+    SUB_A_L:    lambda self: self._sub_a(self.registers[REGISTER_L]),
+    SUB_A_HL:   lambda self: self._sub_a(self._read_hl()),
 })
 INSTRUCTION_MAP.update({
-    SBC_A_A:    lambda self: self.sbc_register(REGISTER_A),
-    SBC_A_B:    lambda self: self.sbc_register(REGISTER_B),
-    SBC_A_C:    lambda self: self.sbc_register(REGISTER_C),
-    SBC_A_D:    lambda self: self.sbc_register(REGISTER_D),
-    SBC_A_E:    lambda self: self.sbc_register(REGISTER_E),
-    SBC_A_H:    lambda self: self.sbc_register(REGISTER_H),
-    SBC_A_L:    lambda self: self.sbc_register(REGISTER_L),
-    SBC_A_HL:   lambda self: self.sbc_hl(),
+    SBC_A_A:    lambda self: self._sub_a(self.registers[REGISTER_A], use_carry=True),
+    SBC_A_B:    lambda self: self._sub_a(self.registers[REGISTER_B], use_carry=True),
+    SBC_A_C:    lambda self: self._sub_a(self.registers[REGISTER_C], use_carry=True),
+    SBC_A_D:    lambda self: self._sub_a(self.registers[REGISTER_D], use_carry=True),
+    SBC_A_E:    lambda self: self._sub_a(self.registers[REGISTER_E], use_carry=True),
+    SBC_A_H:    lambda self: self._sub_a(self.registers[REGISTER_H], use_carry=True),
+    SBC_A_L:    lambda self: self._sub_a(self.registers[REGISTER_L], use_carry=True),
+    SBC_A_HL:   lambda self: self._sub_a(self._read_hl(), use_carry=True),
 })
 INSTRUCTION_MAP.update({
-    AND_A:    lambda self: self.and_register(REGISTER_A),
-    AND_B:    lambda self: self.and_register(REGISTER_B),
-    AND_C:    lambda self: self.and_register(REGISTER_C),
-    AND_D:    lambda self: self.and_register(REGISTER_D),
-    AND_E:    lambda self: self.and_register(REGISTER_E),
-    AND_H:    lambda self: self.and_register(REGISTER_H),
-    AND_L:    lambda self: self.and_register(REGISTER_L),
-    AND_HL:   lambda self: self.and_hl(),
+    AND_A:    lambda self: self._and_a(self.registers[REGISTER_A]),
+    AND_B:    lambda self: self._and_a(self.registers[REGISTER_B]),
+    AND_C:    lambda self: self._and_a(self.registers[REGISTER_C]),
+    AND_D:    lambda self: self._and_a(self.registers[REGISTER_D]),
+    AND_E:    lambda self: self._and_a(self.registers[REGISTER_E]),
+    AND_H:    lambda self: self._and_a(self.registers[REGISTER_H]),
+    AND_L:    lambda self: self._and_a(self.registers[REGISTER_L]),
+    AND_HL:   lambda self: self._and_a(self._read_hl()),
 })
 INSTRUCTION_MAP.update({
-    XOR_A:    lambda self: self.xor_register(REGISTER_A),
-    XOR_B:    lambda self: self.xor_register(REGISTER_B),
-    XOR_C:    lambda self: self.xor_register(REGISTER_C),
-    XOR_D:    lambda self: self.xor_register(REGISTER_D),
-    XOR_E:    lambda self: self.xor_register(REGISTER_E),
-    XOR_H:    lambda self: self.xor_register(REGISTER_H),
-    XOR_L:    lambda self: self.xor_register(REGISTER_L),
-    XOR_HL:   lambda self: self.xor_hl(),
+    XOR_A:    lambda self: self._xor_a(self.registers[REGISTER_A]),
+    XOR_B:    lambda self: self._xor_a(self.registers[REGISTER_B]),
+    XOR_C:    lambda self: self._xor_a(self.registers[REGISTER_C]),
+    XOR_D:    lambda self: self._xor_a(self.registers[REGISTER_D]),
+    XOR_E:    lambda self: self._xor_a(self.registers[REGISTER_E]),
+    XOR_H:    lambda self: self._xor_a(self.registers[REGISTER_H]),
+    XOR_L:    lambda self: self._xor_a(self.registers[REGISTER_L]),
+    XOR_HL:   lambda self: self._xor_a(self._read_hl()),
 })
 
 class CPU:
@@ -139,35 +139,6 @@ class CPU:
         if ((operand_1 & 0x0F) < (operand_2 & 0x0F) + carry):
             self.registers[REGISTER_F] |= FLAG_H
 
-    # Instruction implementations
-    def add_register(self, register):
-        self._add_a( self.registers[register] )
-
-    def add_hl(self):
-        memory_value = self._read_hl()
-        self._add_a(memory_value)
-
-    def adc_register(self, register):
-        self._add_a(self.registers[register], use_carry=True)
-
-    def adc_hl(self):
-        memory_value = self._read_hl()
-        self._add_a(memory_value, use_carry=True)
-
-    def sub_register(self, register):
-        self._sub_a(self.registers[register])
-
-    def sub_hl(self):
-        memory_value = self._read_hl()
-        self._sub_a(memory_value)
-
-    def sbc_register(self, register):
-        self._sub_a(self.registers[register], use_carry=True)
-
-    def sbc_hl(self):
-        memory_value = self._read_hl()
-        self._sub_a(memory_value, use_carry=True)
-
     def _and_a(self, operand2):
         self.registers[REGISTER_A] &= operand2  # AND operation
 
@@ -178,12 +149,6 @@ class CPU:
         # Half carry is always set for AND
         self.registers[REGISTER_F] |= FLAG_H 
 
-    def and_register(self, register):
-        self._and_a( self.registers[register] )
-
-    def and_hl(self):
-        self._and_a( self._read_hl() )
-
     def _xor_a(self, operand2):
         self.registers[REGISTER_A] ^= operand2  # XOR operation
 
@@ -191,9 +156,3 @@ class CPU:
         self.registers[REGISTER_F] = 0
         if self.registers[REGISTER_A] == 0:
             self.registers[REGISTER_F] |= FLAG_Z  # Set zero flag
-
-    def xor_register(self, register):
-        self._xor_a( self.registers[register] )
-
-    def xor_hl(self):
-        self._xor_a( self._read_hl() )
