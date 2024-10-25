@@ -87,29 +87,35 @@ class CPU:
         memory_value = self.memory.read_byte(address)
         return memory_value
 
-    def _add_a(self, value, use_carry=False):
-        if use_carry: carry = (self.registers[REGISTER_F] & FLAG_C) >> 4  # Extract the carry flag
-        else: carry = 0
-        result = self.registers[REGISTER_A] + value + carry
+    def _add_a(self, operand_2, use_carry=False):
+        carry = (self.registers[REGISTER_F] & FLAG_C) >> 4  if use_carry else 0
+        operand_1 = self.registers[REGISTER_A]
+        result = operand_1 + operand_2 + carry
         self.registers[REGISTER_A] = result & 0xFF
+
         self.registers[REGISTER_F] = 0x00
-        if result & 0xFF == 0:
+        if self.registers[REGISTER_A] == 0:
             self.registers[REGISTER_F] |= FLAG_Z
         self.registers[REGISTER_F] &= ~FLAG_N
         if result > 0xFF:
             self.registers[REGISTER_F] |= FLAG_C
+        if ((operand_1 & 0x0F) + (operand_2 & 0x0F) + carry) > 0x0F:
+            self.registers[REGISTER_F] |= FLAG_H
 
-    def _sub_a(self, value, use_carry=False):
-        if use_carry: carry = (self.registers[REGISTER_F] & FLAG_C) >> 4  # Extract the carry flag
-        else: carry = 0
-        result = self.registers[REGISTER_A] - value - carry
+    def _sub_a(self, operand_2, use_carry=False):
+        carry = (self.registers[REGISTER_F] & FLAG_C) >> 4  if use_carry else 0
+        operand_1 = self.registers[REGISTER_A]
+        result = operand_1 - operand_2 - carry
         self.registers[REGISTER_A] = result & 0xFF
+
         self.registers[REGISTER_F] = 0x00
         if result & 0xFF == 0:
             self.registers[REGISTER_F] |= FLAG_Z
         self.registers[REGISTER_F] |= FLAG_N
-        if result > 0xFF:
+        if result < 0:
             self.registers[REGISTER_F] |= FLAG_C
+        if ((operand_1 & 0x0F) < (operand_2 & 0x0F) + carry):
+            self.registers[REGISTER_F] |= FLAG_H
 
     # Instruction implementations
     def add_register(self, register):
