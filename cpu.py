@@ -6,6 +6,7 @@ from opcodes import (
     SBC_A_B, SBC_A_C, SBC_A_D, SBC_A_E, SBC_A_H, SBC_A_L, SBC_A_HL, SBC_A_A,
     AND_B, AND_C, AND_D, AND_E, AND_H, AND_L, AND_HL, AND_A,
     XOR_B, XOR_C, XOR_D, XOR_E, XOR_H, XOR_L, XOR_HL, XOR_A,
+    OR_B, OR_C, OR_D, OR_E, OR_H, OR_L, OR_HL, OR_A,
 )
 
 FLAG_Z = 0b10000000  # Zero Flag
@@ -86,6 +87,16 @@ INSTRUCTION_MAP.update({
     XOR_L:    lambda self: self._xor_a(self.registers[REGISTER_L]),
     XOR_HL:   lambda self: self._xor_a(self._read_hl()),
 })
+INSTRUCTION_MAP.update({
+    OR_A:    lambda self: self._or_a(self.registers[REGISTER_A]),
+    OR_B:    lambda self: self._or_a(self.registers[REGISTER_B]),
+    OR_C:    lambda self: self._or_a(self.registers[REGISTER_C]),
+    OR_D:    lambda self: self._or_a(self.registers[REGISTER_D]),
+    OR_E:    lambda self: self._or_a(self.registers[REGISTER_E]),
+    OR_H:    lambda self: self._or_a(self.registers[REGISTER_H]),
+    OR_L:    lambda self: self._or_a(self.registers[REGISTER_L]),
+    OR_HL:   lambda self: self._or_a(self._read_hl()),
+})
 
 class CPU:
     def __init__(self, memory: Memory):
@@ -151,6 +162,14 @@ class CPU:
 
     def _xor_a(self, operand2):
         self.registers[REGISTER_A] ^= operand2  # XOR operation
+
+        # Set flags
+        self.registers[REGISTER_F] = 0
+        if self.registers[REGISTER_A] == 0:
+            self.registers[REGISTER_F] |= FLAG_Z  # Set zero flag
+
+    def _or_a(self, operand2):
+        self.registers[REGISTER_A] |= operand2  # OR operation
 
         # Set flags
         self.registers[REGISTER_F] = 0

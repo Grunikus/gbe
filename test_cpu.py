@@ -328,5 +328,47 @@ class TestCPU(unittest.TestCase):
         self.assertEqual(self.cpu.registers[REGISTER_A], expected_result)
         self.assertEqual(self.cpu.registers[REGISTER_F], expected_flags)
 
+    def test_or_register(self):
+        OPERANDS = {
+            opcodes.OR_A: REGISTER_A,
+            opcodes.OR_B: REGISTER_B,
+            opcodes.OR_C: REGISTER_C,
+            opcodes.OR_D: REGISTER_D,
+            opcodes.OR_E: REGISTER_E,
+            opcodes.OR_H: REGISTER_H,
+            opcodes.OR_L: REGISTER_L,
+        }
+        for opcode, register in OPERANDS.items():
+            OPERAND1 = 0x0F  # Example value
+            self.cpu.registers[REGISTER_A] = OPERAND1
+            OPERAND2 = self.cpu.registers[register]  # Value from the selected register
+
+            self.memory.write_byte(self.cpu.pc, opcode)
+            self.cpu.step()
+
+            expected_result = OPERAND1 | OPERAND2
+            expected_flags = FLAG_Z if expected_result == 0 else 0
+
+            self.assertEqual(self.cpu.registers[REGISTER_A], expected_result, f"{opcode=},{register=}")
+            self.assertEqual(self.cpu.registers[REGISTER_F], expected_flags, f"{opcode=},{register=}")
+
+    def test_or_hl(self):
+        opcode = opcodes.OR_HL
+        OPERAND1 = 0x0F  # Example value in register A
+        OPERAND2 = 0x03  # Example value in memory at HL
+
+        ADDR_HIGH, ADDR_LOW = 0x00, 0x10
+        self._initialize_memory_at_hl(ADDR_HIGH, ADDR_LOW, OPERAND2)
+
+        self.cpu.registers[REGISTER_A] = OPERAND1
+        self.memory.write_byte(self.cpu.pc, opcode)
+        self.cpu.step()
+
+        expected_result = OPERAND1 | OPERAND2
+        expected_flags = FLAG_Z if expected_result == 0 else 0
+
+        self.assertEqual(self.cpu.registers[REGISTER_A], expected_result)
+        self.assertEqual(self.cpu.registers[REGISTER_F], expected_flags)
+
 if __name__ == '__main__':
     unittest.main()

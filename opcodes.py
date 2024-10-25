@@ -176,7 +176,6 @@ XOR_H       = 0xAC  # XOR H
 XOR_L       = 0xAD  # XOR L
 XOR_HL      = 0xAE  # XOR (HL)
 XOR_A       = 0xAF  # XOR A
-"""
 OR_B        = 0xB0  # OR B
 OR_C        = 0xB1  # OR C
 OR_D        = 0xB2  # OR D
@@ -185,6 +184,7 @@ OR_H        = 0xB4  # OR H
 OR_L        = 0xB5  # OR L
 OR_HL       = 0xB6  # OR (HL)
 OR_A        = 0xB7  # OR A
+"""
 CP_B        = 0xB8  # CP B
 CP_C        = 0xB9  # CP C
 CP_D        = 0xBA  # CP D
