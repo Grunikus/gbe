@@ -8,6 +8,7 @@ from opcodes import (
     XOR_B, XOR_C, XOR_D, XOR_E, XOR_H, XOR_L, XOR_HL, XOR_A,
     OR_B, OR_C, OR_D, OR_E, OR_H, OR_L, OR_HL, OR_A,
     CP_B, CP_C, CP_D, CP_E, CP_H, CP_L, CP_HL, CP_A,
+    ADD_A_IMM, ADC_A_IMM, SUB_IMM, SBC_IMM,
 )
 
 FLAG_Z = 0b10000000  # Zero Flag
@@ -37,6 +38,7 @@ INSTRUCTION_MAP.update({
     ADD_A_H:    lambda self: self._add_a(self.registers[REGISTER_H]),
     ADD_A_L:    lambda self: self._add_a(self.registers[REGISTER_L]),
     ADD_A_HL:   lambda self: self._add_a(self._read_hl()),
+    ADD_A_IMM:  lambda self: (self._add_a(self.memory.read_byte(self.pc)), setattr(self, 'pc', self.pc + 1)),
 })
 INSTRUCTION_MAP.update({
     ADC_A_A:    lambda self: self._add_a(self.registers[REGISTER_A], use_carry=True),
@@ -47,6 +49,7 @@ INSTRUCTION_MAP.update({
     ADC_A_H:    lambda self: self._add_a(self.registers[REGISTER_H], use_carry=True),
     ADC_A_L:    lambda self: self._add_a(self.registers[REGISTER_L], use_carry=True),
     ADC_A_HL:   lambda self: self._add_a(self._read_hl(), use_carry=True),
+    ADC_A_IMM:  lambda self: (self._add_a(self.memory.read_byte(self.pc), use_carry=True), setattr(self, 'pc', self.pc + 1)),
 })
 INSTRUCTION_MAP.update({
     SUB_A_A:    lambda self: self._sub_a(self.registers[REGISTER_A]),
@@ -57,6 +60,7 @@ INSTRUCTION_MAP.update({
     SUB_A_H:    lambda self: self._sub_a(self.registers[REGISTER_H]),
     SUB_A_L:    lambda self: self._sub_a(self.registers[REGISTER_L]),
     SUB_A_HL:   lambda self: self._sub_a(self._read_hl()),
+    SUB_IMM:    lambda self: (self._sub_a(self.memory.read_byte(self.pc)), setattr(self, 'pc', self.pc + 1)),
 })
 INSTRUCTION_MAP.update({
     SBC_A_A:    lambda self: self._sub_a(self.registers[REGISTER_A], use_carry=True),
@@ -67,6 +71,7 @@ INSTRUCTION_MAP.update({
     SBC_A_H:    lambda self: self._sub_a(self.registers[REGISTER_H], use_carry=True),
     SBC_A_L:    lambda self: self._sub_a(self.registers[REGISTER_L], use_carry=True),
     SBC_A_HL:   lambda self: self._sub_a(self._read_hl(), use_carry=True),
+    SBC_IMM:    lambda self: (self._sub_a(self.memory.read_byte(self.pc), use_carry=True), setattr(self, 'pc', self.pc + 1)),
 })
 INSTRUCTION_MAP.update({
     AND_A:    lambda self: self._and_a(self.registers[REGISTER_A]),

@@ -192,6 +192,16 @@ CP_H        = 0xBC  # CP H
 CP_L        = 0xBD  # CP L
 CP_HL       = 0xBE  # CP (HL)
 CP_A        = 0xBF  # CP A
+ADD_A_IMM   = 0xC6  # ADD A, imm
+ADC_A_IMM   = 0xCE  # ADC A, imm
+SUB_IMM     = 0xD6  # SUB A, imm
+SBC_IMM     = 0xDE  # SUB A, imm
+"""
+AND_IMM     = 0xE6  # AND imm
+XOR_IMM     = 0xEE  # XOR imm
+OR_IMM      = 0xF6  # OR imm
+CP_IMM      = 0xFE  # CP imm
+"""
 """
 RET_NZ      = 0xC0  # RET NZ
 POP_BC      = 0xC1  # POP BC
@@ -223,7 +233,7 @@ JP_NC       = 0xDA  # JP NC, nn
 IN_C        = 0xDB  # IN A, (C)
 CALL_NC     = 0xDC  # CALL NC, nn
 ADC_IMM     = 0xDD  # ADC A, imm
-RST_18      = 0xDE  # RST 18H
+RST_18      = 0xDF  # RST 18H
 LDH_NN_A    = 0xE0  # LDH (nn), A
 POP_HL      = 0xE1  # POP HL
 LD_HL_NN    = 0xE2  # LD (C), A
@@ -238,7 +248,7 @@ LD_A_HL     = 0xEA  # LD A, (HL)
 LD_A_NN     = 0xEB  # LD A, (nn)
 CALL_HL     = 0xEC  # CALL nn
 ADC_SP_IMM  = 0xED  # ADC SP, imm
-RST_28      = 0xEE  # RST 28H
+RST_28      = 0xEF  # RST 28H
 LDH_A_NN    = 0xF0  # LDH A, (nn)
 POP_AF      = 0xF1  # POP AF
 LD_A_HL     = 0xF2  # LD A, (HL)
@@ -253,5 +263,5 @@ LD_A_NN     = 0xFA  # LD A, (nn)
 EI          = 0xFB  # EI
 CALL_NN     = 0xFC  # CALL nn
 CP_IMM      = 0xFD  # CP imm
-RST_38      = 0xFE  # RST 38H
+RST_38      = 0xFF  # RST 38H
 """
