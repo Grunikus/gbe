@@ -55,17 +55,17 @@ class TestCPU(unittest.TestCase):
 
     def test_add_register(self):
         OPCODES_TO_ITERATE = {
-            opcodes.ADD_A_A: REGISTER_A,
             opcodes.ADD_A_B: REGISTER_B,
             opcodes.ADD_A_C: REGISTER_C,
             opcodes.ADD_A_D: REGISTER_D,
             opcodes.ADD_A_E: REGISTER_E,
             opcodes.ADD_A_H: REGISTER_H,
             opcodes.ADD_A_L: REGISTER_L,
+            opcodes.ADD_A_A: REGISTER_A,
         }
         OPERAND1 = 0x01
         for opcode, register in OPCODES_TO_ITERATE.items():
-            OPERAND2 = self.cpu.registers[register]  # TODO: Why isn't this failing? op A, A after another operation
+            OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT, EXPECTED_FLAGS = self._add(OPERAND1, OPERAND2, carry_in= 0)
 
             self.cpu.registers[REGISTER_A] = OPERAND1
@@ -95,18 +95,18 @@ class TestCPU(unittest.TestCase):
 
     def test_adc_register(self):
         OPCODES_TO_ITERATE = {
-            opcodes.ADC_A_A: REGISTER_A,
             opcodes.ADC_A_B: REGISTER_B,
             opcodes.ADC_A_C: REGISTER_C,
             opcodes.ADC_A_D: REGISTER_D,
             opcodes.ADC_A_E: REGISTER_E,
             opcodes.ADC_A_H: REGISTER_H,
             opcodes.ADC_A_L: REGISTER_L,
+            opcodes.ADC_A_A: REGISTER_A,
         }
         INITIAL_CARRY_STATUS = 1
         OPERAND1 = 0x01
         for opcode, register in OPCODES_TO_ITERATE.items():
-            OPERAND2 = self.cpu.registers[register]  # TODO: Why isn't this failing? op A, A after another operation
+            OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT, EXPECTED_FLAGS = self._add(OPERAND1, OPERAND2, carry_in= INITIAL_CARRY_STATUS)
 
             if INITIAL_CARRY_STATUS: self.cpu.registers[REGISTER_F] |= FLAG_C
@@ -138,29 +138,29 @@ class TestCPU(unittest.TestCase):
 
     def test_sub_register(self, compare=False):
         SUB_OPERANDS = {
-            opcodes.SUB_A_A: REGISTER_A,
             opcodes.SUB_A_B: REGISTER_B,
             opcodes.SUB_A_C: REGISTER_C,
             opcodes.SUB_A_D: REGISTER_D,
             opcodes.SUB_A_E: REGISTER_E,
             opcodes.SUB_A_H: REGISTER_H,
             opcodes.SUB_A_L: REGISTER_L,
+            opcodes.SUB_A_A: REGISTER_A,
         }
         CP_OPERANDS = {
             # Add CP opcodes for comparison tests
-            opcodes.CP_A: REGISTER_A,
             opcodes.CP_B: REGISTER_B,
             opcodes.CP_C: REGISTER_C,
             opcodes.CP_D: REGISTER_D,
             opcodes.CP_E: REGISTER_E,
             opcodes.CP_H: REGISTER_H,
             opcodes.CP_L: REGISTER_L,
+            opcodes.CP_A: REGISTER_A,
         }
         OPCODES_TO_ITERATE = CP_OPERANDS if compare else SUB_OPERANDS
         OPERAND1 = 0x01
         INITIAL_CARRY_STATUS = 1
         for opcode, register in OPCODES_TO_ITERATE.items():
-            OPERAND2 = self.cpu.registers[register]  # TODO: Why isn't this failing? op A, A after another operation
+            OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT, EXPECTED_FLAGS = self._sub(OPERAND1, OPERAND2, carry_in=0)
 
             if INITIAL_CARRY_STATUS: self.cpu.registers[REGISTER_F] |= FLAG_C
@@ -198,18 +198,18 @@ class TestCPU(unittest.TestCase):
 
     def test_sbc_register(self):
         OPCODES_TO_ITERATE = {
-            opcodes.SBC_A_A: REGISTER_A,
             opcodes.SBC_A_B: REGISTER_B,
             opcodes.SBC_A_C: REGISTER_C,
             opcodes.SBC_A_D: REGISTER_D,
             opcodes.SBC_A_E: REGISTER_E,
             opcodes.SBC_A_H: REGISTER_H,
             opcodes.SBC_A_L: REGISTER_L,
+            opcodes.SBC_A_A: REGISTER_A,
         }
         INITIAL_CARRY_STATUS = 1
         OPERAND1 = 0x01
         for opcode, register in OPCODES_TO_ITERATE.items():
-            OPERAND2 = self.cpu.registers[register]  # TODO: Why isn't this failing? op A, A after another operation
+            OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT, EXPECTED_FLAGS = self._sub(OPERAND1, OPERAND2, carry_in=INITIAL_CARRY_STATUS)
 
             if INITIAL_CARRY_STATUS: self.cpu.registers[REGISTER_F] |= FLAG_C
@@ -312,17 +312,17 @@ class TestCPU(unittest.TestCase):
 
     def test_or_register(self):
         OPCODES_TO_ITERATE = {
-            opcodes.OR_A: REGISTER_A,
             opcodes.OR_B: REGISTER_B,
             opcodes.OR_C: REGISTER_C,
             opcodes.OR_D: REGISTER_D,
             opcodes.OR_E: REGISTER_E,
             opcodes.OR_H: REGISTER_H,
             opcodes.OR_L: REGISTER_L,
+            opcodes.OR_A: REGISTER_A,
         }
         OPERAND1 = 0x0F
         for opcode, register in OPCODES_TO_ITERATE.items():
-            OPERAND2 = self.cpu.registers[register]  # TODO: Why isn't this failing? op A, A after another operation
+            OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT = OPERAND1 | OPERAND2
             EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0
 
