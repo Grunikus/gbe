@@ -7,6 +7,7 @@ from opcodes import (
     AND_B, AND_C, AND_D, AND_E, AND_H, AND_L, AND_HL, AND_A,
     XOR_B, XOR_C, XOR_D, XOR_E, XOR_H, XOR_L, XOR_HL, XOR_A,
     OR_B, OR_C, OR_D, OR_E, OR_H, OR_L, OR_HL, OR_A,
+    CP_B, CP_C, CP_D, CP_E, CP_H, CP_L, CP_HL, CP_A,
 )
 
 FLAG_Z = 0b10000000  # Zero Flag
@@ -97,6 +98,16 @@ INSTRUCTION_MAP.update({
     OR_L:    lambda self: self._or_a(self.registers[REGISTER_L]),
     OR_HL:   lambda self: self._or_a(self._read_hl()),
 })
+INSTRUCTION_MAP.update({
+    CP_A:    lambda self: self._sub_a(self.registers[REGISTER_A], compare=True),
+    CP_B:    lambda self: self._sub_a(self.registers[REGISTER_B], compare=True),
+    CP_C:    lambda self: self._sub_a(self.registers[REGISTER_C], compare=True),
+    CP_D:    lambda self: self._sub_a(self.registers[REGISTER_D], compare=True),
+    CP_E:    lambda self: self._sub_a(self.registers[REGISTER_E], compare=True),
+    CP_H:    lambda self: self._sub_a(self.registers[REGISTER_H], compare=True),
+    CP_L:    lambda self: self._sub_a(self.registers[REGISTER_L], compare=True),
+    CP_HL:   lambda self: self._sub_a(self._read_hl(), compare=True),
+})
 
 class CPU:
     def __init__(self, memory: Memory):
@@ -135,11 +146,11 @@ class CPU:
         if ((operand_1 & 0x0F) + (operand_2 & 0x0F) + carry) > 0x0F:
             self.registers[REGISTER_F] |= FLAG_H
 
-    def _sub_a(self, operand_2, use_carry=False):
-        carry = (self.registers[REGISTER_F] & FLAG_C) >> 4  if use_carry else 0
+    def _sub_a(self, operand_2, use_carry=False, compare=False):
+        carry = (self.registers[REGISTER_F] & FLAG_C) >> 4 if use_carry else 0
         operand_1 = self.registers[REGISTER_A]
         result = operand_1 - operand_2 - carry
-        self.registers[REGISTER_A] = result & 0xFF
+        if not compare: self.registers[REGISTER_A] = result & 0xFF
 
         self.registers[REGISTER_F] = 0x00
         if result & 0xFF == 0:

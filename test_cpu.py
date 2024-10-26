@@ -143,8 +143,8 @@ class TestCPU(unittest.TestCase):
         self.assertEqual(self.cpu.registers[REGISTER_A], expected_result)
         self.assertEqual(self.cpu.registers[REGISTER_F], flags)
 
-    def test_sub_register(self):
-        OPERANDS = {
+    def test_sub_register(self, compare=False):
+        SUB_OPERANDS = {
             opcodes.SUB_A_A: REGISTER_A,
             opcodes.SUB_A_B: REGISTER_B,
             opcodes.SUB_A_C: REGISTER_C,
@@ -153,6 +153,17 @@ class TestCPU(unittest.TestCase):
             opcodes.SUB_A_H: REGISTER_H,
             opcodes.SUB_A_L: REGISTER_L,
         }
+        CP_OPERANDS = {
+            # Add CP opcodes for comparison tests
+            opcodes.CP_A: REGISTER_A,
+            opcodes.CP_B: REGISTER_B,
+            opcodes.CP_C: REGISTER_C,
+            opcodes.CP_D: REGISTER_D,
+            opcodes.CP_E: REGISTER_E,
+            opcodes.CP_H: REGISTER_H,
+            opcodes.CP_L: REGISTER_L,
+        }
+        OPERANDS = CP_OPERANDS if compare else SUB_OPERANDS
 
         for opcode, register in OPERANDS.items():
             OPERAND1 = 0x01
@@ -168,11 +179,11 @@ class TestCPU(unittest.TestCase):
             self.cpu.step()
 
             expected_result, expected_flags = self._sub(OPERAND1, OPERAND2, carry_in=0)
-            self.assertEqual(self.cpu.registers[REGISTER_A], expected_result, f"{opcode=},{register=}")
-            self.assertEqual(self.cpu.registers[REGISTER_F], expected_flags,  f"{opcode=},{register=}. {expected_result=}")
+            self.assertEqual(self.cpu.registers[REGISTER_A], OPERAND1 if compare else expected_result, f"{opcode=}, {register=}")
+            self.assertEqual(self.cpu.registers[REGISTER_F], expected_flags, f"{opcode=}, {register=}. {expected_result=}")
 
-    def test_sub_hl(self):
-        opcode = opcodes.SUB_A_HL
+    def test_sub_hl(self, compare=False):
+        opcode = opcodes.CP_HL if compare else opcodes.SUB_A_HL
         OPERAND1 = 0x03
         OPERAND2 = 0x02
         INITIAL_CARRY_STATUS = 1
@@ -189,8 +200,14 @@ class TestCPU(unittest.TestCase):
         self.cpu.step()
 
         expected_result, expected_flags = self._sub(OPERAND1, OPERAND2, carry_in=0)
-        self.assertEqual(self.cpu.registers[REGISTER_A], expected_result)
+        self.assertEqual(self.cpu.registers[REGISTER_A], OPERAND1 if compare else expected_result)
         self.assertEqual(self.cpu.registers[REGISTER_F], expected_flags)
+
+    def test_cp_register(self):
+        self.test_sub_register(compare=True)
+
+    def test_cp_hl(self):
+        self.test_sub_hl(compare=True)
 
     def test_sbc_register(self):
         OPERANDS = {

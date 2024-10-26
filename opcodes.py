@@ -184,7 +184,6 @@ OR_H        = 0xB4  # OR H
 OR_L        = 0xB5  # OR L
 OR_HL       = 0xB6  # OR (HL)
 OR_A        = 0xB7  # OR A
-"""
 CP_B        = 0xB8  # CP B
 CP_C        = 0xB9  # CP C
 CP_D        = 0xBA  # CP D
@@ -193,6 +192,7 @@ CP_H        = 0xBC  # CP H
 CP_L        = 0xBD  # CP L
 CP_HL       = 0xBE  # CP (HL)
 CP_A        = 0xBF  # CP A
+"""
 RET_NZ      = 0xC0  # RET NZ
 POP_BC      = 0xC1  # POP BC
 JP_NZ       = 0xC2  # JP NZ, nn
