@@ -18,11 +18,18 @@ class TestCPU(unittest.TestCase):
         self.cpu.registers[REGISTER_H] = 0x06
         self.cpu.registers[REGISTER_L] = 0xFF  # ADD A, r: A = 0x01 + 0xFF = 0x00 (Z = 1, H = 1, C = 1)
 
-    def _initialize_memory_at_hl(self, hl_high, hl_low, value):
+    def _run(self, opcode, operand1, expected_result, expected_flags):
+        self.cpu.registers[REGISTER_A] = operand1
+        self.memory.write_byte(self.cpu.pc, opcode)
+        self.cpu.step()
+        self.assertEqual(self.cpu.registers[REGISTER_A], expected_result, f"{opcode=}")
+        self.assertEqual(self.cpu.registers[REGISTER_F], expected_flags,  f"{opcode=}")
+
+    def _initialize_hl_and_memory(self, H, L, byte):
         """Helper function to set registers H, L, and memory at the HL address."""
-        self.cpu.registers[REGISTER_H] = hl_high
-        self.cpu.registers[REGISTER_L] = hl_low
-        self.memory.write_byte((hl_high << 8) | hl_low, value)
+        self.cpu.registers[REGISTER_H] = H
+        self.cpu.registers[REGISTER_L] = L
+        self.memory.write_byte((H << 8) | L, byte)
 
     def _calculate_flags(self, result, carry_out, half_carry, is_subtraction):
         z_flag = FLAG_Z if result == 0 else 0
@@ -30,6 +37,10 @@ class TestCPU(unittest.TestCase):
         h_flag = FLAG_H if half_carry else 0
         c_flag = FLAG_C if carry_out else 0
         return z_flag | n_flag | h_flag | c_flag
+
+    def _carry_update(self, INITIAL_CARRY_STATUS):
+        if INITIAL_CARRY_STATUS: self.cpu.registers[REGISTER_F] |= FLAG_C
+        else: self.cpu.registers[REGISTER_F] &= ~FLAG_C
 
     def _add(self, operand1, operand2, carry_in):
         carry_in = 1 if carry_in else 0
@@ -68,11 +79,7 @@ class TestCPU(unittest.TestCase):
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT, EXPECTED_FLAGS = self._add(OPERAND1, OPERAND2, carry_in= 0)
 
-            self.cpu.registers[REGISTER_A] = OPERAND1
-            self.memory.write_byte(self.cpu.pc, opcode)
-            self.cpu.step()
-            self.assertEqual(self.cpu.registers[REGISTER_A], EXPECTED_RESULT, f"{opcode=},{register=}")
-            self.assertEqual(self.cpu.registers[REGISTER_F], EXPECTED_FLAGS,  f"{opcode=},{register=}")
+            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_add_non_register(self):
         OPCODES_TO_ITERATE = { opcodes.ADD_A_HL, opcodes.ADD_A_IMM }
@@ -83,15 +90,10 @@ class TestCPU(unittest.TestCase):
         ADDR_HIGH, ADDR_LOW = 0x00, 0x10
         for opcode in OPCODES_TO_ITERATE:
             MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND2) if opcode in IMMEDIATE_OPCODES else (OPERAND2, 0)
-            self._initialize_memory_at_hl(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE)
+            self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE)
             self.memory.write_byte(self.cpu.pc+1, IMMEDIATE_VALUE)
-            if INITIAL_CARRY_STATUS: self.cpu.registers[REGISTER_F] |= FLAG_C
-            else: self.cpu.registers[REGISTER_F] &= ~FLAG_C
-            self.cpu.registers[REGISTER_A] = OPERAND1
-            self.memory.write_byte(self.cpu.pc, opcode)
-            self.cpu.step()
-            self.assertEqual(self.cpu.registers[REGISTER_A], EXPECTED_RESULT, f"{opcode=}")
-            self.assertEqual(self.cpu.registers[REGISTER_F], EXPECTED_FLAGS,  f"{opcode=}")
+            self._carry_update(INITIAL_CARRY_STATUS)
+            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_adc_register(self):
         OPCODES_TO_ITERATE = {
@@ -109,13 +111,8 @@ class TestCPU(unittest.TestCase):
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT, EXPECTED_FLAGS = self._add(OPERAND1, OPERAND2, carry_in= INITIAL_CARRY_STATUS)
 
-            if INITIAL_CARRY_STATUS: self.cpu.registers[REGISTER_F] |= FLAG_C
-            else: self.cpu.registers[REGISTER_F] &= ~FLAG_C
-            self.cpu.registers[REGISTER_A] = OPERAND1
-            self.memory.write_byte(self.cpu.pc, opcode)
-            self.cpu.step()
-            self.assertEqual(self.cpu.registers[REGISTER_A], EXPECTED_RESULT, f"{opcode=},{register=}")
-            self.assertEqual(self.cpu.registers[REGISTER_F], EXPECTED_FLAGS,  f"{opcode=},{register=}")
+            self._carry_update(INITIAL_CARRY_STATUS)
+            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_adc_non_register(self):
         OPCODES_TO_ITERATE = { opcodes.ADC_A_HL, opcodes.ADC_A_IMM }
@@ -126,15 +123,10 @@ class TestCPU(unittest.TestCase):
         ADDR_HIGH, ADDR_LOW = 0x00, 0x10
         for opcode in OPCODES_TO_ITERATE:
             MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND2) if opcode in IMMEDIATE_OPCODES else (OPERAND2, 0)
-            self._initialize_memory_at_hl(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE)
+            self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE)
             self.memory.write_byte(self.cpu.pc+1, IMMEDIATE_VALUE)
-            if INITIAL_CARRY_STATUS: self.cpu.registers[REGISTER_F] |= FLAG_C
-            else: self.cpu.registers[REGISTER_F] &= ~FLAG_C
-            self.cpu.registers[REGISTER_A] = OPERAND1
-            self.memory.write_byte(self.cpu.pc, opcode)
-            self.cpu.step()
-            self.assertEqual(self.cpu.registers[REGISTER_A], EXPECTED_RESULT, f"{opcode=}")
-            self.assertEqual(self.cpu.registers[REGISTER_F], EXPECTED_FLAGS,  f"{opcode=}")
+            self._carry_update(INITIAL_CARRY_STATUS)
+            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_sub_register(self, compare=False):
         SUB_OPERANDS = {
@@ -163,13 +155,8 @@ class TestCPU(unittest.TestCase):
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT, EXPECTED_FLAGS = self._sub(OPERAND1, OPERAND2, carry_in=0)
 
-            if INITIAL_CARRY_STATUS: self.cpu.registers[REGISTER_F] |= FLAG_C
-            else: self.cpu.registers[REGISTER_F] &= ~FLAG_C
-            self.cpu.registers[REGISTER_A] = OPERAND1
-            self.memory.write_byte(self.cpu.pc, opcode)
-            self.cpu.step()
-            self.assertEqual(self.cpu.registers[REGISTER_A], OPERAND1 if compare else EXPECTED_RESULT, f"{opcode=}, {register=}")
-            self.assertEqual(self.cpu.registers[REGISTER_F], EXPECTED_FLAGS, f"{opcode=}, {register=}. {EXPECTED_RESULT=}")
+            self._carry_update(INITIAL_CARRY_STATUS)
+            self._run(opcode, OPERAND1, OPERAND1 if compare else EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_sub_non_register(self, compare=False):
         OPCODES_TO_ITERATE = {opcodes.CP_HL} if compare else { opcodes.SUB_A_HL, opcodes.SUB_IMM }
@@ -180,15 +167,10 @@ class TestCPU(unittest.TestCase):
         ADDR_HIGH, ADDR_LOW = 0x00, 0x10
         for opcode in OPCODES_TO_ITERATE:
             MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND2) if opcode in IMMEDIATE_OPCODES else (OPERAND2, 0)
-            self._initialize_memory_at_hl(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE)
+            self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE)
             self.memory.write_byte(self.cpu.pc+1, IMMEDIATE_VALUE)
-            if INITIAL_CARRY_STATUS: self.cpu.registers[REGISTER_F] |= FLAG_C
-            else: self.cpu.registers[REGISTER_F] &= ~FLAG_C
-            self.cpu.registers[REGISTER_A] = OPERAND1
-            self.memory.write_byte(self.cpu.pc, opcode)
-            self.cpu.step()
-            self.assertEqual(self.cpu.registers[REGISTER_A], OPERAND1 if compare else EXPECTED_RESULT)
-            self.assertEqual(self.cpu.registers[REGISTER_F], EXPECTED_FLAGS)
+            self._carry_update(INITIAL_CARRY_STATUS)
+            self._run(opcode, OPERAND1, OPERAND1 if compare else EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_cp_register(self):
         self.test_sub_register(compare=True)
@@ -212,13 +194,8 @@ class TestCPU(unittest.TestCase):
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT, EXPECTED_FLAGS = self._sub(OPERAND1, OPERAND2, carry_in=INITIAL_CARRY_STATUS)
 
-            if INITIAL_CARRY_STATUS: self.cpu.registers[REGISTER_F] |= FLAG_C
-            else: self.cpu.registers[REGISTER_F] &= ~FLAG_C
-            self.cpu.registers[REGISTER_A] = OPERAND1
-            self.memory.write_byte(self.cpu.pc, opcode)
-            self.cpu.step()
-            self.assertEqual(self.cpu.registers[REGISTER_A], EXPECTED_RESULT, f"{opcode=},{register=}")
-            self.assertEqual(self.cpu.registers[REGISTER_F], EXPECTED_FLAGS,  f"{opcode=},{register=}")
+            self._carry_update(INITIAL_CARRY_STATUS)
+            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_sbc_non_register(self):
         OPCODES_TO_ITERATE = { opcodes.SBC_A_HL, opcodes.SBC_IMM }
@@ -229,15 +206,10 @@ class TestCPU(unittest.TestCase):
         ADDR_HIGH, ADDR_LOW = 0x00, 0x10
         for opcode in OPCODES_TO_ITERATE:
             MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND2) if opcode in IMMEDIATE_OPCODES else (OPERAND2, 0)
-            self._initialize_memory_at_hl(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE)
+            self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE)
             self.memory.write_byte(self.cpu.pc+1, IMMEDIATE_VALUE)
-            if INITIAL_CARRY_STATUS: self.cpu.registers[REGISTER_F] |= FLAG_C
-            else: self.cpu.registers[REGISTER_F] &= ~FLAG_C
-            self.cpu.registers[REGISTER_A] = OPERAND1
-            self.memory.write_byte(self.cpu.pc, opcode)
-            self.cpu.step()
-            self.assertEqual(self.cpu.registers[REGISTER_A], EXPECTED_RESULT, f"{opcode=}")
-            self.assertEqual(self.cpu.registers[REGISTER_F], EXPECTED_FLAGS,  f"{opcode=}")
+            self._carry_update(INITIAL_CARRY_STATUS)
+            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_and_register(self):
         OPCODES_TO_ITERATE = {
@@ -254,11 +226,7 @@ class TestCPU(unittest.TestCase):
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT = OPERAND1 & OPERAND2
             EXPECTED_FLAGS = (FLAG_Z if EXPECTED_RESULT == 0 else 0) | FLAG_H  # Half carry is always set for AND operations
-            self.cpu.registers[REGISTER_A] = OPERAND1
-            self.memory.write_byte(self.cpu.pc, opcode)
-            self.cpu.step()
-            self.assertEqual(self.cpu.registers[REGISTER_A], EXPECTED_RESULT, f"{opcode=},{register=}")
-            self.assertEqual(self.cpu.registers[REGISTER_F], EXPECTED_FLAGS,  f"{opcode=},{register=}")
+            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_xor_register(self):
         OPERANDS = {
@@ -275,11 +243,7 @@ class TestCPU(unittest.TestCase):
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT = OPERAND1 ^ OPERAND2
             EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0
-            self.cpu.registers[REGISTER_A] = OPERAND1
-            self.memory.write_byte(self.cpu.pc, opcode)
-            self.cpu.step()
-            self.assertEqual(self.cpu.registers[REGISTER_A], EXPECTED_RESULT, f"{opcode=},{register=}")
-            self.assertEqual(self.cpu.registers[REGISTER_F], EXPECTED_FLAGS,  f"{opcode=},{register=}")
+            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_and_hl(self):
         opcode = opcodes.AND_HL
@@ -289,12 +253,8 @@ class TestCPU(unittest.TestCase):
         EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0 | FLAG_H  # Half carry is always set for AND operations
 
         ADDR_HIGH, ADDR_LOW = 0x00, 0x10
-        self._initialize_memory_at_hl(ADDR_HIGH, ADDR_LOW, OPERAND2)
-        self.cpu.registers[REGISTER_A] = OPERAND1
-        self.memory.write_byte(self.cpu.pc, opcode)
-        self.cpu.step()
-        self.assertEqual(self.cpu.registers[REGISTER_A], EXPECTED_RESULT)
-        self.assertEqual(self.cpu.registers[REGISTER_F], EXPECTED_FLAGS)
+        self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, OPERAND2)
+        self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_xor_hl(self):
         opcode = opcodes.XOR_HL
@@ -303,14 +263,10 @@ class TestCPU(unittest.TestCase):
         EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0
 
         ADDR_HIGH, ADDR_LOW = 0x00, 0x10
-        self._initialize_memory_at_hl(ADDR_HIGH, ADDR_LOW, OPERAND2)
-        self.cpu.registers[REGISTER_A] = OPERAND1
-        self.memory.write_byte(self.cpu.pc, opcode)
-        self.cpu.step()
-        self.assertEqual(self.cpu.registers[REGISTER_A], EXPECTED_RESULT)
-        self.assertEqual(self.cpu.registers[REGISTER_F], EXPECTED_FLAGS)
+        self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, OPERAND2)
+        self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
-    def test_or_register(self):
+    def test_or_register(self, OPERAND1 = 0x0F):
         OPCODES_TO_ITERATE = {
             opcodes.OR_B: REGISTER_B,
             opcodes.OR_C: REGISTER_C,
@@ -320,31 +276,22 @@ class TestCPU(unittest.TestCase):
             opcodes.OR_L: REGISTER_L,
             opcodes.OR_A: REGISTER_A,
         }
-        OPERAND1 = 0x0F
         for opcode, register in OPCODES_TO_ITERATE.items():
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT = OPERAND1 | OPERAND2
             EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0
 
-            self.cpu.registers[REGISTER_A] = OPERAND1
-            self.memory.write_byte(self.cpu.pc, opcode)
-            self.cpu.step()
-            self.assertEqual(self.cpu.registers[REGISTER_A], EXPECTED_RESULT, f"{opcode=},{register=}")
-            self.assertEqual(self.cpu.registers[REGISTER_F], EXPECTED_FLAGS, f"{opcode=},{register=}")
+            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_or_hl(self):
         opcode = opcodes.OR_HL
         OPERAND1, OPERAND2 = 0x0F, 0x03
+
         EXPECTED_RESULT = OPERAND1 | OPERAND2
         EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0
 
-        ADDR_HIGH, ADDR_LOW = 0x00, 0x10
-        self._initialize_memory_at_hl(ADDR_HIGH, ADDR_LOW, OPERAND2)
-        self.cpu.registers[REGISTER_A] = OPERAND1
-        self.memory.write_byte(self.cpu.pc, opcode)
-        self.cpu.step()
-        self.assertEqual(self.cpu.registers[REGISTER_A], EXPECTED_RESULT)
-        self.assertEqual(self.cpu.registers[REGISTER_F], EXPECTED_FLAGS)
+        self._initialize_hl_and_memory(0x00, 0x10, OPERAND2)
+        self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
 if __name__ == '__main__':
     unittest.main()
