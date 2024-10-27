@@ -64,7 +64,7 @@ class TestCPU(unittest.TestCase):
         flags = self._calculate_flags(return_value, carry_out, half_carry, is_subtraction=True)
         return return_value,flags
 
-    def test_add_register(self):
+    def test_add_a_register(self):
         OPCODES_TO_ITERATE = {
             opcodes.ADD_A_B: REGISTER_B,
             opcodes.ADD_A_C: REGISTER_C,
@@ -81,7 +81,7 @@ class TestCPU(unittest.TestCase):
 
             self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
-    def test_add_non_register(self):
+    def test_add_a_non_register(self):
         OPCODES_TO_ITERATE = { opcodes.ADD_A_HL, opcodes.ADD_A_IMM }
         INITIAL_CARRY_STATUS = 1
         OPERAND1 = 0x01
@@ -95,7 +95,7 @@ class TestCPU(unittest.TestCase):
             self._carry_update(INITIAL_CARRY_STATUS)
             self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
-    def test_adc_register(self):
+    def test_adc_a_register(self):
         OPCODES_TO_ITERATE = {
             opcodes.ADC_A_B: REGISTER_B,
             opcodes.ADC_A_C: REGISTER_C,
@@ -114,7 +114,7 @@ class TestCPU(unittest.TestCase):
             self._carry_update(INITIAL_CARRY_STATUS)
             self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
-    def test_adc_non_register(self):
+    def test_adc_a_non_register(self):
         OPCODES_TO_ITERATE = { opcodes.ADC_A_HL, opcodes.ADC_A_IMM }
         INITIAL_CARRY_STATUS = 1
         OPERAND1 = 0x01
@@ -128,7 +128,7 @@ class TestCPU(unittest.TestCase):
             self._carry_update(INITIAL_CARRY_STATUS)
             self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
-    def test_sub_register(self, compare=False):
+    def test_sub_a_register(self, compare=False):
         SUB_OPERANDS = {
             opcodes.SUB_A_B: REGISTER_B,
             opcodes.SUB_A_C: REGISTER_C,
@@ -158,7 +158,7 @@ class TestCPU(unittest.TestCase):
             self._carry_update(INITIAL_CARRY_STATUS)
             self._run(opcode, OPERAND1, OPERAND1 if compare else EXPECTED_RESULT, EXPECTED_FLAGS)
 
-    def test_sub_non_register(self, compare=False):
+    def test_sub_a_non_register(self, compare=False):
         OPCODES_TO_ITERATE = {opcodes.CP_A_HL} if compare else { opcodes.SUB_A_HL, opcodes.SUB_A_IMM }
         INITIAL_CARRY_STATUS = 1
         OPERAND1 = 0x03
@@ -172,13 +172,14 @@ class TestCPU(unittest.TestCase):
             self._carry_update(INITIAL_CARRY_STATUS)
             self._run(opcode, OPERAND1, OPERAND1 if compare else EXPECTED_RESULT, EXPECTED_FLAGS)
 
-    def test_cp_register(self):
-        self.test_sub_register(compare=True)
+    def test_cp_a_register(self):
+        self.test_sub_a_register(compare=True)
 
-    def test_cp_hl(self):
-        self.test_sub_non_register(compare=True)
+    # TODO: Check tests for CP A, imm
+    def test_cp_a_hl(self):
+        self.test_sub_a_non_register(compare=True)
 
-    def test_sbc_register(self):
+    def test_sbc_a_register(self):
         OPCODES_TO_ITERATE = {
             opcodes.SBC_A_B: REGISTER_B,
             opcodes.SBC_A_C: REGISTER_C,
@@ -197,7 +198,7 @@ class TestCPU(unittest.TestCase):
             self._carry_update(INITIAL_CARRY_STATUS)
             self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
-    def test_sbc_non_register(self):
+    def test_sbc_a_non_register(self):
         OPCODES_TO_ITERATE = { opcodes.SBC_A_HL, opcodes.SBC_A_IMM }
         INITIAL_CARRY_STATUS = 1
         OPERAND1 = 0x03
@@ -211,7 +212,7 @@ class TestCPU(unittest.TestCase):
             self._carry_update(INITIAL_CARRY_STATUS)
             self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
-    def test_and_register(self):
+    def test_and_a_register(self):
         OPCODES_TO_ITERATE = {
             opcodes.AND_A_A: REGISTER_A,
             opcodes.AND_A_B: REGISTER_B,
@@ -228,7 +229,7 @@ class TestCPU(unittest.TestCase):
             EXPECTED_FLAGS = (FLAG_Z if EXPECTED_RESULT == 0 else 0) | FLAG_H  # Half carry is always set for AND operations
             self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
-    def test_xor_register(self):
+    def test_xor_a_register(self):
         OPERANDS = {
             opcodes.XOR_A_A: REGISTER_A,
             opcodes.XOR_A_B: REGISTER_B,
@@ -245,7 +246,8 @@ class TestCPU(unittest.TestCase):
             EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0
             self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
-    def test_and_hl(self):
+    # TODO: Check tests for AND A, imm
+    def test_and_a_hl(self):
         opcode = opcodes.AND_A_HL
         OPERAND1 = 0x0F
         OPERAND2 = 0x03
@@ -256,7 +258,8 @@ class TestCPU(unittest.TestCase):
         self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, OPERAND2)
         self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
-    def test_xor_hl(self):
+    # TODO: Check tests for XOR A, imm
+    def test_xor_a_hl(self):
         opcode = opcodes.XOR_A_HL
         OPERAND1, OPERAND2 = 0x0F, 0x03
         EXPECTED_RESULT = OPERAND1 ^ OPERAND2
@@ -266,7 +269,7 @@ class TestCPU(unittest.TestCase):
         self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, OPERAND2)
         self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
-    def test_or_register(self, OPERAND1 = 0x0F):
+    def test_or_a_register(self, OPERAND1 = 0x0F):
         OPCODES_TO_ITERATE = {
             opcodes.OR_A_B: REGISTER_B,
             opcodes.OR_A_C: REGISTER_C,
@@ -283,7 +286,8 @@ class TestCPU(unittest.TestCase):
 
             self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
-    def test_or_hl(self):
+    # TODO: Check tests for OR A, imm
+    def test_or_a_hl(self):
         opcode = opcodes.OR_A_HL
         OPERAND1, OPERAND2 = 0x0F, 0x03
 
