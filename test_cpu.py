@@ -3,7 +3,7 @@ from cpu import CPU, FLAG_Z, FLAG_N, FLAG_H, FLAG_C, REGISTER_A, REGISTER_F, REG
 from memory import Memory
 import opcodes
 
-IMMEDIATE_OPCODES = { opcodes.ADD_A_IMM, opcodes.ADC_A_IMM, opcodes.SUB_IMM, opcodes.SBC_IMM, }
+IMMEDIATE_OPCODES = { opcodes.ADD_A_IMM, opcodes.ADC_A_IMM, opcodes.SUB_A_IMM, opcodes.SBC_A_IMM, }
 
 class TestCPU(unittest.TestCase):
     def setUp(self):
@@ -140,13 +140,13 @@ class TestCPU(unittest.TestCase):
         }
         CP_OPERANDS = {
             # Add CP opcodes for comparison tests
-            opcodes.CP_B: REGISTER_B,
-            opcodes.CP_C: REGISTER_C,
-            opcodes.CP_D: REGISTER_D,
-            opcodes.CP_E: REGISTER_E,
-            opcodes.CP_H: REGISTER_H,
-            opcodes.CP_L: REGISTER_L,
-            opcodes.CP_A: REGISTER_A,
+            opcodes.CP_A_B: REGISTER_B,
+            opcodes.CP_A_C: REGISTER_C,
+            opcodes.CP_A_D: REGISTER_D,
+            opcodes.CP_A_E: REGISTER_E,
+            opcodes.CP_A_H: REGISTER_H,
+            opcodes.CP_A_L: REGISTER_L,
+            opcodes.CP_A_A: REGISTER_A,
         }
         OPCODES_TO_ITERATE = CP_OPERANDS if compare else SUB_OPERANDS
         OPERAND1 = 0x01
@@ -159,7 +159,7 @@ class TestCPU(unittest.TestCase):
             self._run(opcode, OPERAND1, OPERAND1 if compare else EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_sub_non_register(self, compare=False):
-        OPCODES_TO_ITERATE = {opcodes.CP_HL} if compare else { opcodes.SUB_A_HL, opcodes.SUB_IMM }
+        OPCODES_TO_ITERATE = {opcodes.CP_A_HL} if compare else { opcodes.SUB_A_HL, opcodes.SUB_A_IMM }
         INITIAL_CARRY_STATUS = 1
         OPERAND1 = 0x03
         OPERAND2 = 0x02
@@ -198,7 +198,7 @@ class TestCPU(unittest.TestCase):
             self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_sbc_non_register(self):
-        OPCODES_TO_ITERATE = { opcodes.SBC_A_HL, opcodes.SBC_IMM }
+        OPCODES_TO_ITERATE = { opcodes.SBC_A_HL, opcodes.SBC_A_IMM }
         INITIAL_CARRY_STATUS = 1
         OPERAND1 = 0x03
         OPERAND2 = 0x02
@@ -213,13 +213,13 @@ class TestCPU(unittest.TestCase):
 
     def test_and_register(self):
         OPCODES_TO_ITERATE = {
-            opcodes.AND_A: REGISTER_A,
-            opcodes.AND_B: REGISTER_B,
-            opcodes.AND_C: REGISTER_C,
-            opcodes.AND_D: REGISTER_D,
-            opcodes.AND_E: REGISTER_E,
-            opcodes.AND_H: REGISTER_H,
-            opcodes.AND_L: REGISTER_L,
+            opcodes.AND_A_A: REGISTER_A,
+            opcodes.AND_A_B: REGISTER_B,
+            opcodes.AND_A_C: REGISTER_C,
+            opcodes.AND_A_D: REGISTER_D,
+            opcodes.AND_A_E: REGISTER_E,
+            opcodes.AND_A_H: REGISTER_H,
+            opcodes.AND_A_L: REGISTER_L,
         }
         OPERAND1 = 0x0F
         for opcode, register in OPCODES_TO_ITERATE.items():
@@ -230,13 +230,13 @@ class TestCPU(unittest.TestCase):
 
     def test_xor_register(self):
         OPERANDS = {
-            opcodes.XOR_A: REGISTER_A,
-            opcodes.XOR_B: REGISTER_B,
-            opcodes.XOR_C: REGISTER_C,
-            opcodes.XOR_D: REGISTER_D,
-            opcodes.XOR_E: REGISTER_E,
-            opcodes.XOR_H: REGISTER_H,
-            opcodes.XOR_L: REGISTER_L,
+            opcodes.XOR_A_A: REGISTER_A,
+            opcodes.XOR_A_B: REGISTER_B,
+            opcodes.XOR_A_C: REGISTER_C,
+            opcodes.XOR_A_D: REGISTER_D,
+            opcodes.XOR_A_E: REGISTER_E,
+            opcodes.XOR_A_H: REGISTER_H,
+            opcodes.XOR_A_L: REGISTER_L,
         }
         OPERAND1 = 0x0F
         for opcode, register in OPERANDS.items():
@@ -246,7 +246,7 @@ class TestCPU(unittest.TestCase):
             self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_and_hl(self):
-        opcode = opcodes.AND_HL
+        opcode = opcodes.AND_A_HL
         OPERAND1 = 0x0F
         OPERAND2 = 0x03
         EXPECTED_RESULT = OPERAND1 & OPERAND2
@@ -257,7 +257,7 @@ class TestCPU(unittest.TestCase):
         self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_xor_hl(self):
-        opcode = opcodes.XOR_HL
+        opcode = opcodes.XOR_A_HL
         OPERAND1, OPERAND2 = 0x0F, 0x03
         EXPECTED_RESULT = OPERAND1 ^ OPERAND2
         EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0
@@ -268,13 +268,13 @@ class TestCPU(unittest.TestCase):
 
     def test_or_register(self, OPERAND1 = 0x0F):
         OPCODES_TO_ITERATE = {
-            opcodes.OR_B: REGISTER_B,
-            opcodes.OR_C: REGISTER_C,
-            opcodes.OR_D: REGISTER_D,
-            opcodes.OR_E: REGISTER_E,
-            opcodes.OR_H: REGISTER_H,
-            opcodes.OR_L: REGISTER_L,
-            opcodes.OR_A: REGISTER_A,
+            opcodes.OR_A_B: REGISTER_B,
+            opcodes.OR_A_C: REGISTER_C,
+            opcodes.OR_A_D: REGISTER_D,
+            opcodes.OR_A_E: REGISTER_E,
+            opcodes.OR_A_H: REGISTER_H,
+            opcodes.OR_A_L: REGISTER_L,
+            opcodes.OR_A_A: REGISTER_A,
         }
         for opcode, register in OPCODES_TO_ITERATE.items():
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
@@ -284,7 +284,7 @@ class TestCPU(unittest.TestCase):
             self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_or_hl(self):
-        opcode = opcodes.OR_HL
+        opcode = opcodes.OR_A_HL
         OPERAND1, OPERAND2 = 0x0F, 0x03
 
         EXPECTED_RESULT = OPERAND1 | OPERAND2
