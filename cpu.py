@@ -29,56 +29,6 @@ REGISTER_E = 5
 REGISTER_H = 6
 REGISTER_L = 7
 
-INSTRUCTION_MAP = {}
-for opcode, register in [ (ADD_A_A, REGISTER_A), (ADD_A_B, REGISTER_B), (ADD_A_C, REGISTER_C), (ADD_A_D, REGISTER_D), (ADD_A_E, REGISTER_E), (ADD_A_H, REGISTER_H), (ADD_A_L, REGISTER_L) ]:
-    INSTRUCTION_MAP[opcode] = lambda self, reg=register: self._add_a(self.registers[reg])  # Python needs reg=register for re-evaluation in the for loop
-INSTRUCTION_MAP.update({
-    ADD_A_HL: lambda self: self._add_a(self._read_hl()),
-    ADD_A_IMM: lambda self: (self._add_a(self.memory.read_byte(self.pc)), setattr(self, 'pc', self.pc + 1)),
-})
-for opcode, register in [ (ADC_A_A, REGISTER_A), (ADC_A_B, REGISTER_B), (ADC_A_C, REGISTER_C), (ADC_A_D, REGISTER_D), (ADC_A_E, REGISTER_E), (ADC_A_H, REGISTER_H), (ADC_A_L, REGISTER_L) ]:
-    INSTRUCTION_MAP[opcode] = lambda self, reg=register: self._add_a(self.registers[reg], use_carry=True)  # Python needs reg=register for re-evaluation in the for loop
-INSTRUCTION_MAP.update({
-    ADC_A_HL: lambda self: self._add_a(self._read_hl(), use_carry=True),
-    ADC_A_IMM: lambda self: (self._add_a(self.memory.read_byte(self.pc), use_carry=True), setattr(self, 'pc', self.pc + 1)),
-})
-for opcode, register in [ (SUB_A_A, REGISTER_A), (SUB_A_B, REGISTER_B), (SUB_A_C, REGISTER_C), (SUB_A_D, REGISTER_D), (SUB_A_E, REGISTER_E), (SUB_A_H, REGISTER_H), (SUB_A_L, REGISTER_L) ]:
-    INSTRUCTION_MAP[opcode] = lambda self, reg=register: self._sub_a(self.registers[reg])  # Python needs reg=register for re-evaluation in the for loop
-INSTRUCTION_MAP.update({
-    SUB_A_HL: lambda self: self._sub_a(self._read_hl()),
-    SUB_A_IMM: lambda self: (self._sub_a(self.memory.read_byte(self.pc)), setattr(self, 'pc', self.pc + 1)),
-})
-for opcode, register in [ (SBC_A_A, REGISTER_A), (SBC_A_B, REGISTER_B), (SBC_A_C, REGISTER_C), (SBC_A_D, REGISTER_D), (SBC_A_E, REGISTER_E), (SBC_A_H, REGISTER_H), (SBC_A_L, REGISTER_L) ]:
-    INSTRUCTION_MAP[opcode] = lambda self, reg=register: self._sub_a(self.registers[reg], use_carry=True)  # Python needs reg=register for re-evaluation in the for loop
-INSTRUCTION_MAP.update({
-    SBC_A_HL: lambda self: self._sub_a(self._read_hl(), use_carry=True),
-    SBC_A_IMM: lambda self: (self._sub_a(self.memory.read_byte(self.pc), use_carry=True), setattr(self, 'pc', self.pc + 1)),
-})
-for opcode, register in [ (AND_A_A, REGISTER_A), (AND_A_B, REGISTER_B), (AND_A_C, REGISTER_C), (AND_A_D, REGISTER_D), (AND_A_E, REGISTER_E), (AND_A_H, REGISTER_H), (AND_A_L, REGISTER_L) ]:
-    INSTRUCTION_MAP[opcode] = lambda self, reg=register: self._and_a(self.registers[reg])  # Python needs reg=register for re-evaluation in the for loop
-INSTRUCTION_MAP.update({
-    AND_A_HL: lambda self: self._and_a(self._read_hl()),
-    AND_A_IMM: lambda self: (self._and_a(self.memory.read_byte(self.pc)), setattr(self, 'pc', self.pc + 1)),
-})
-for opcode, register in [ (XOR_A_A, REGISTER_A), (XOR_A_B, REGISTER_B), (XOR_A_C, REGISTER_C), (XOR_A_D, REGISTER_D), (XOR_A_E, REGISTER_E), (XOR_A_H, REGISTER_H), (XOR_A_L, REGISTER_L) ]:
-    INSTRUCTION_MAP[opcode] = lambda self, reg=register: self._xor_a(self.registers[reg])  # Python needs reg=register for re-evaluation in the for loop
-INSTRUCTION_MAP.update({
-    XOR_A_HL: lambda self: self._xor_a(self._read_hl()),
-    XOR_A_IMM: lambda self: (self._xor_a(self.memory.read_byte(self.pc)), setattr(self, 'pc', self.pc + 1)),
-})
-for opcode, register in [ (OR_A_A, REGISTER_A), (OR_A_B, REGISTER_B), (OR_A_C, REGISTER_C), (OR_A_D, REGISTER_D), (OR_A_E, REGISTER_E), (OR_A_H, REGISTER_H), (OR_A_L, REGISTER_L) ]:
-    INSTRUCTION_MAP[opcode] = lambda self, reg=register: self._or_a(self.registers[reg])  # Python needs reg=register for re-evaluation in the for loop
-INSTRUCTION_MAP.update({
-    OR_A_HL: lambda self: self._or_a(self._read_hl()),
-    OR_A_IMM: lambda self: (self._or_a(self.memory.read_byte(self.pc)), setattr(self, 'pc', self.pc + 1)),
-})
-for opcode, register in [ (CP_A_A, REGISTER_A), (CP_A_B, REGISTER_B), (CP_A_C, REGISTER_C), (CP_A_D, REGISTER_D), (CP_A_E, REGISTER_E), (CP_A_H, REGISTER_H), (CP_A_L, REGISTER_L) ]:
-    INSTRUCTION_MAP[opcode] = lambda self, reg=register: self._sub_a(self.registers[reg], compare=True)  # Python needs reg=register for re-evaluation in the for loop
-INSTRUCTION_MAP.update({
-    CP_A_HL: lambda self: self._sub_a(self._read_hl(), compare=True),
-    CP_A_IMM: lambda self: (self._sub_a(self.memory.read_byte(self.pc), compare=True), setattr(self, 'pc', self.pc + 1)),
-})
-
 class CPU:
     def __init__(self, memory: Memory):
         self.memory = memory
@@ -86,11 +36,47 @@ class CPU:
         self.registers = [0x00] * 8
         self.pc = START_PC
         self.sp = START_SP
+        self.INSTRUCTION_MAP = {}
+        self._fill_instruction_map()
+
+    def _fill_instruction_map(self):
+        def _map_opcode_register_pairs_to_operation(opcode_register_pairs, operation, **kwargs):
+            for opcode, register in opcode_register_pairs:
+                self.INSTRUCTION_MAP[opcode] = lambda self, reg=register: operation(self, self.registers[reg], **kwargs)
+        def _map_opcode_hl_imm_to_operation(opcode_hl, opcode_imm, operation, **kwargs):
+            self.INSTRUCTION_MAP[opcode_hl] = lambda self: operation(self, self._read_hl(), **kwargs)
+            self.INSTRUCTION_MAP[opcode_imm] = lambda self: (operation(self, self.memory.read_byte(self.pc), **kwargs), setattr(self, 'pc', self.pc + 1))
+        # Define the opcode-register pairs and call add_instruction_map with the appropriate function and flags
+        _map_opcode_register_pairs_to_operation([ (ADD_A_A, REGISTER_A), (ADD_A_B, REGISTER_B), (ADD_A_C, REGISTER_C), (ADD_A_D, REGISTER_D), (ADD_A_E, REGISTER_E), (ADD_A_H, REGISTER_H), (ADD_A_L, REGISTER_L) ],
+                            lambda self, value: self._add_a(value))
+        _map_opcode_register_pairs_to_operation( [ (ADC_A_A, REGISTER_A), (ADC_A_B, REGISTER_B), (ADC_A_C, REGISTER_C), (ADC_A_D, REGISTER_D), (ADC_A_E, REGISTER_E), (ADC_A_H, REGISTER_H), (ADC_A_L, REGISTER_L) ],
+                            lambda self, value: self._add_a(value, use_carry=True))
+        _map_opcode_register_pairs_to_operation( [ (SUB_A_A, REGISTER_A), (SUB_A_B, REGISTER_B), (SUB_A_C, REGISTER_C), (SUB_A_D, REGISTER_D), (SUB_A_E, REGISTER_E), (SUB_A_H, REGISTER_H), (SUB_A_L, REGISTER_L) ],
+                            lambda self, value: self._sub_a(value))
+        _map_opcode_register_pairs_to_operation( [ (SBC_A_A, REGISTER_A), (SBC_A_B, REGISTER_B), (SBC_A_C, REGISTER_C), (SBC_A_D, REGISTER_D), (SBC_A_E, REGISTER_E), (SBC_A_H, REGISTER_H), (SBC_A_L, REGISTER_L) ],
+                            lambda self, value: self._sub_a(value, use_carry=True))
+        _map_opcode_register_pairs_to_operation( [ (AND_A_A, REGISTER_A), (AND_A_B, REGISTER_B), (AND_A_C, REGISTER_C), (AND_A_D, REGISTER_D), (AND_A_E, REGISTER_E), (AND_A_H, REGISTER_H), (AND_A_L, REGISTER_L) ],
+                            lambda self, value: self._and_a(value))
+        _map_opcode_register_pairs_to_operation( [ (XOR_A_A, REGISTER_A), (XOR_A_B, REGISTER_B), (XOR_A_C, REGISTER_C), (XOR_A_D, REGISTER_D), (XOR_A_E, REGISTER_E), (XOR_A_H, REGISTER_H), (XOR_A_L, REGISTER_L) ],
+                            lambda self, value: self._xor_a(value))
+        _map_opcode_register_pairs_to_operation( [ (OR_A_A, REGISTER_A), (OR_A_B, REGISTER_B), (OR_A_C, REGISTER_C), (OR_A_D, REGISTER_D), (OR_A_E, REGISTER_E), (OR_A_H, REGISTER_H), (OR_A_L, REGISTER_L) ],
+                            lambda self, value: self._or_a(value))
+        _map_opcode_register_pairs_to_operation( [ (CP_A_A, REGISTER_A), (CP_A_B, REGISTER_B), (CP_A_C, REGISTER_C), (CP_A_D, REGISTER_D), (CP_A_E, REGISTER_E), (CP_A_H, REGISTER_H), (CP_A_L, REGISTER_L) ],
+                            lambda self, value: self._sub_a(value, compare=True))
+        # Define each set of operations with their HL and IMM opcodes
+        _map_opcode_hl_imm_to_operation(ADD_A_HL, ADD_A_IMM, lambda self, value: self._add_a(value))
+        _map_opcode_hl_imm_to_operation(ADC_A_HL, ADC_A_IMM, lambda self, value: self._add_a(value, use_carry=True))
+        _map_opcode_hl_imm_to_operation(SUB_A_HL, SUB_A_IMM, lambda self, value: self._sub_a(value))
+        _map_opcode_hl_imm_to_operation(SBC_A_HL, SBC_A_IMM, lambda self, value: self._sub_a(value, use_carry=True))
+        _map_opcode_hl_imm_to_operation(AND_A_HL, AND_A_IMM, lambda self, value: self._and_a(value))
+        _map_opcode_hl_imm_to_operation(XOR_A_HL, XOR_A_IMM, lambda self, value: self._xor_a(value))
+        _map_opcode_hl_imm_to_operation(OR_A_HL, OR_A_IMM, lambda self, value: self._or_a(value))
+        _map_opcode_hl_imm_to_operation(CP_A_HL, CP_A_IMM, lambda self, value: self._sub_a(value, compare=True))
 
     def step(self):
         opcode = self.memory.read_byte(self.pc)
         self.pc += 1
-        INSTRUCTION_MAP[opcode](self)
+        self.INSTRUCTION_MAP[opcode](self)
 
     def _read_hl(self):
         address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
