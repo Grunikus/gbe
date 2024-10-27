@@ -44,7 +44,7 @@ class CPU:
             for opcode, register in opcode_register_pairs:
                 self.INSTRUCTION_MAP[opcode] = lambda self, reg=register: operation(self, self.registers[reg], **kwargs)
         def _map_opcode_hl_imm_to_operation(opcode_hl, opcode_imm, operation, **kwargs):
-            self.INSTRUCTION_MAP[opcode_hl] = lambda self: operation(self, self._read_hl(), **kwargs)
+            self.INSTRUCTION_MAP[opcode_hl] = lambda self: operation(self, self._read_byte_at_memory_hl(), **kwargs)
             self.INSTRUCTION_MAP[opcode_imm] = lambda self: (operation(self, self.memory.read_byte(self.pc), **kwargs), setattr(self, 'pc', self.pc + 1))
         # Define the opcode-register pairs and call add_instruction_map with the appropriate function and flags
         _map_opcode_register_pairs_to_operation([ (ADD_A_A, REGISTER_A), (ADD_A_B, REGISTER_B), (ADD_A_C, REGISTER_C), (ADD_A_D, REGISTER_D), (ADD_A_E, REGISTER_E), (ADD_A_H, REGISTER_H), (ADD_A_L, REGISTER_L) ],
@@ -78,7 +78,7 @@ class CPU:
         self.pc += 1
         self.INSTRUCTION_MAP[opcode](self)
 
-    def _read_hl(self):
+    def _read_byte_at_memory_hl(self):
         address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
         memory_value = self.memory.read_byte(address)
         return memory_value
