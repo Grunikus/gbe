@@ -20,10 +20,20 @@ class TestCPU(unittest.TestCase):
 
     def _run(self, opcode, operand1, expected_result, expected_flags):
         self.cpu.registers[REGISTER_A] = operand1
+        # TODO: Extract the previous code out so we can merge _run methods
         self.memory.write_byte(self.cpu.pc, opcode)
         self.cpu.step()
-        self.assertEqual(self.cpu.registers[REGISTER_A], expected_result, f"{opcode=}")
         self.assertEqual(self.cpu.registers[REGISTER_F], expected_flags,  f"{opcode=}")
+        # TODO: Extract the following code out so we can merge _run methods
+        self.assertEqual(self.cpu.registers[REGISTER_A], expected_result, f"{opcode=}")
+
+    def _run_add_hl(self, opcode, expected_result, expected_flags):
+        self.memory.write_byte(self.cpu.pc, opcode)
+        self.cpu.step()
+        self.assertEqual(self.cpu.registers[REGISTER_F], expected_flags, f"{opcode=}")
+        # TODO: Extract the following code out so we can merge _run methods
+        hl_value = (self.cpu.registers[REGISTER_H] << 8) | self.cpu.registers[REGISTER_L]
+        self.assertEqual(hl_value, expected_result, f"{opcode=}")
 
     def _initialize_hl_and_memory(self, H, L, hl_value, immediate_value):
         """Helper function to set registers H, L, and memory at the HL address."""
@@ -64,6 +74,25 @@ class TestCPU(unittest.TestCase):
         half_carry = ((operand1 & 0x0F) - (operand2 & 0x0F) - carry_in) < 0
         flags = self._calculate_flags(return_value, carry_out, half_carry, is_subtraction=True)
         return return_value,flags
+
+    def _add_16bit(self, operand1, operand2):
+        result = operand1 + operand2
+        carry_out = result > 0xFFFF
+        half_carry = ((operand1 & 0x0FFF) + (operand2 & 0x0FFF)) > 0x0FFF
+        return result & 0xFFFF, self._calculate_flags(True, carry_out, half_carry, False)
+
+    def test_add_hl_register(self):
+        OPCODES_TO_ITERATE = {
+            opcodes.ADD_HL_BC: (REGISTER_B, REGISTER_C),
+            opcodes.ADD_HL_DE: (REGISTER_D, REGISTER_E),
+            opcodes.ADD_HL_HL: (REGISTER_H, REGISTER_L),
+            # opcodes.ADD_HL_SP: (REGISTER_S, REGISTER_P),  # TODO: There's only cpu.sp
+        }
+        for opcode, (register1, register2) in OPCODES_TO_ITERATE.items():
+            OPERAND_1 = (self.cpu.registers[REGISTER_H] << 8) | self.cpu.registers[REGISTER_L]
+            OPERAND_2 = (self.cpu.registers[register1] << 8) | self.cpu.registers[register2]
+            expected_result, expected_flags = self._add_16bit(OPERAND_1, OPERAND_2)  # TODO: flags can be unmodified; In this case Z should be.
+            self._run_add_hl(opcode, expected_result, expected_flags)
 
     def test_add_a_register(self):
         OPCODES_TO_ITERATE = {

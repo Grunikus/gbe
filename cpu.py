@@ -1,5 +1,6 @@
 from memory import Memory
 from opcodes import (
+    ADD_HL_BC, ADD_HL_DE, ADD_HL_HL, ADD_HL_SP,
     ADD_A_B, ADD_A_C, ADD_A_D, ADD_A_E, ADD_A_H, ADD_A_L, ADD_A_HL, ADD_A_A,
     ADC_A_B, ADC_A_C, ADC_A_D, ADC_A_E, ADC_A_H, ADC_A_L, ADC_A_HL, ADC_A_A,
     SUB_A_B, SUB_A_C, SUB_A_D, SUB_A_E, SUB_A_H, SUB_A_L, SUB_A_HL, SUB_A_A,
@@ -40,6 +41,9 @@ class CPU:
         self._fill_instruction_map()
 
     def _fill_instruction_map(self):
+        def _map_opcode_register16_pairs_to_operation(opcode_register_groups, operation, **kwargs):
+            for opcode, register1, register2 in opcode_register_groups:
+                self.INSTRUCTION_MAP[opcode] = lambda self, reg1=register1, reg2=register2: operation(self, (self.registers[reg1] << 8) | self.registers[reg2], **kwargs)
         def _map_opcode_register_pairs_to_operation(opcode_register_pairs, operation, **kwargs):
             for opcode, register in opcode_register_pairs:
                 self.INSTRUCTION_MAP[opcode] = lambda self, reg=register: operation(self, self.registers[reg], **kwargs)
@@ -47,6 +51,9 @@ class CPU:
             self.INSTRUCTION_MAP[opcode_hl] = lambda self: operation(self, self._read_byte_at_memory_hl(), **kwargs)
             self.INSTRUCTION_MAP[opcode_imm] = lambda self: (operation(self, self.memory.read_byte(self.pc), **kwargs), setattr(self, 'pc', self.pc + 1))
         # Define the opcode-register pairs and call add_instruction_map with the appropriate function and flags
+        # TODO: ADD_HL_SP
+        _map_opcode_register16_pairs_to_operation([ (ADD_HL_BC, REGISTER_B, REGISTER_C), (ADD_HL_DE, REGISTER_D, REGISTER_E), (ADD_HL_HL, REGISTER_H, REGISTER_L) ],
+                            lambda self, value: self._add_hl(value))
         _map_opcode_register_pairs_to_operation([ (ADD_A_A, REGISTER_A), (ADD_A_B, REGISTER_B), (ADD_A_C, REGISTER_C), (ADD_A_D, REGISTER_D), (ADD_A_E, REGISTER_E), (ADD_A_H, REGISTER_H), (ADD_A_L, REGISTER_L) ],
                             lambda self, value: self._add_a(value))
         _map_opcode_register_pairs_to_operation( [ (ADC_A_A, REGISTER_A), (ADC_A_B, REGISTER_B), (ADC_A_C, REGISTER_C), (ADC_A_D, REGISTER_D), (ADC_A_E, REGISTER_E), (ADC_A_H, REGISTER_H), (ADC_A_L, REGISTER_L) ],
@@ -82,6 +89,22 @@ class CPU:
         address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
         memory_value = self.memory.read_byte(address)
         return memory_value
+
+    def _add_hl(self, operand_16):
+        previous_hl = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
+        result = previous_hl + operand_16
+
+        # Update H and L with the result, only keeping the lower 16 bits
+        self.registers[REGISTER_H] = (result >> 8) & 0xFF
+        self.registers[REGISTER_L] = result & 0xFF
+        # Clear the N flag as this is an addition
+        self.registers[REGISTER_F] &= ~FLAG_N
+        # Set the H flag if there is a half-carry from bit 11 to bit 12
+        if ((previous_hl & 0x0FFF) + (operand_16 & 0x0FFF)) > 0x0FFF: self.registers[REGISTER_F] |= FLAG_H
+        else: self.registers[REGISTER_F] &= ~FLAG_H
+        # Set the C flag if there is a carry from bit 15
+        if result > 0xFFFF: self.registers[REGISTER_F] |= FLAG_C
+        else: self.registers[REGISTER_F] &= ~FLAG_C
 
     def _add_a(self, operand_2, use_carry=False):
         carry = (self.registers[REGISTER_F] & FLAG_C) >> 4  if use_carry else 0
