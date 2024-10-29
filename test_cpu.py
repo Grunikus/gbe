@@ -78,15 +78,15 @@ class TestCPU(unittest.TestCase):
 
     def test_add_hl_register(self):
         OPCODES_TO_ITERATE = {
-            opcodes.ADD_HL_BC: (REGISTER_B, REGISTER_C),
-            opcodes.ADD_HL_DE: (REGISTER_D, REGISTER_E),
-            opcodes.ADD_HL_HL: (REGISTER_H, REGISTER_L),
-            # opcodes.ADD_HL_SP: (REGISTER_S, REGISTER_P),  # TODO: There's only cpu.sp
+            opcodes.ADD_HL_BC: 'BC',
+            opcodes.ADD_HL_DE: 'DE',
+            opcodes.ADD_HL_HL: 'HL',
+            opcodes.ADD_HL_SP: 'sp'
         }
-        for opcode, (register1, register2) in OPCODES_TO_ITERATE.items():
-            if opcode == opcodes.ADD_HL_HL: self.cpu.registers[REGISTER_H], self.cpu.registers[REGISTER_L] = 0, 0
-            OPERAND_1 = (self.cpu.registers[REGISTER_H] << 8) | self.cpu.registers[REGISTER_L]
-            OPERAND_2 = (self.cpu.registers[register1] << 8) | self.cpu.registers[register2]
+        for opcode, register_pair in OPCODES_TO_ITERATE.items():
+            if opcode == opcodes.ADD_HL_HL: self.cpu.HL = 0  # Clear HL for HL + HL case
+            OPERAND_1 = self.cpu.HL
+            OPERAND_2 = getattr(self.cpu, register_pair)
             expected_result, expected_flags = self._add_16bit(OPERAND_1, OPERAND_2)
             self._step_and_assert_flags(opcode, expected_flags)
             hl_value = (self.cpu.registers[REGISTER_H] << 8) | self.cpu.registers[REGISTER_L]
