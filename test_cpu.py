@@ -18,22 +18,15 @@ class TestCPU(unittest.TestCase):
         self.cpu.registers[REGISTER_H] = 0x06
         self.cpu.registers[REGISTER_L] = 0xFF  # ADD A, r: A = 0x01 + 0xFF = 0x00 (Z = 1, H = 1, C = 1)
 
-    def _run(self, opcode, operand1, expected_result, expected_flags):
-        self.cpu.registers[REGISTER_A] = operand1
-        # TODO: Extract the previous code out so we can merge _run methods
+    def _step_and_assert_flags(self, opcode, expected_flags):
         self.memory.write_byte(self.cpu.pc, opcode)
         self.cpu.step()
         self.assertEqual(self.cpu.registers[REGISTER_F], expected_flags,  f"{opcode=}")
-        # TODO: Extract the following code out so we can merge _run methods
-        self.assertEqual(self.cpu.registers[REGISTER_A], expected_result, f"{opcode=}")
 
-    def _run_add_hl(self, opcode, expected_result, expected_flags):
-        self.memory.write_byte(self.cpu.pc, opcode)
-        self.cpu.step()
-        self.assertEqual(self.cpu.registers[REGISTER_F], expected_flags, f"{opcode=}")
-        # TODO: Extract the following code out so we can merge _run methods
-        hl_value = (self.cpu.registers[REGISTER_H] << 8) | self.cpu.registers[REGISTER_L]
-        self.assertEqual(hl_value, expected_result, f"{opcode=}")
+    def _set_register_a_step_assert(self, opcode, operand1, expected_result, expected_flags):
+        self.cpu.registers[REGISTER_A] = operand1
+        self._step_and_assert_flags(opcode, expected_flags)
+        self.assertEqual(self.cpu.registers[REGISTER_A], expected_result, f"{opcode=}")
 
     def _initialize_hl_and_memory(self, H, L, hl_value, immediate_value):
         """Helper function to set registers H, L, and memory at the HL address."""
@@ -95,7 +88,9 @@ class TestCPU(unittest.TestCase):
             OPERAND_1 = (self.cpu.registers[REGISTER_H] << 8) | self.cpu.registers[REGISTER_L]
             OPERAND_2 = (self.cpu.registers[register1] << 8) | self.cpu.registers[register2]
             expected_result, expected_flags = self._add_16bit(OPERAND_1, OPERAND_2)
-            self._run_add_hl(opcode, expected_result, expected_flags)
+            self._step_and_assert_flags(opcode, expected_flags)
+            hl_value = (self.cpu.registers[REGISTER_H] << 8) | self.cpu.registers[REGISTER_L]
+            self.assertEqual(hl_value, expected_result, f"{opcode=}")
 
     def test_add_a_register(self):
         OPCODES_TO_ITERATE = {
@@ -112,7 +107,7 @@ class TestCPU(unittest.TestCase):
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT, EXPECTED_FLAGS = self._add(OPERAND1, OPERAND2, carry_in= 0)
 
-            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
+            self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_add_a_non_register(self):
         OPCODES_TO_ITERATE = { opcodes.ADD_A_HL, opcodes.ADD_A_IMM }
@@ -125,7 +120,7 @@ class TestCPU(unittest.TestCase):
             MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND2) if opcode in IMMEDIATE_OPCODES else (OPERAND2, 0)
             self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE, IMMEDIATE_VALUE)
             self._carry_update(INITIAL_CARRY_STATUS)
-            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
+            self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_adc_a_register(self):
         OPCODES_TO_ITERATE = {
@@ -144,7 +139,7 @@ class TestCPU(unittest.TestCase):
             EXPECTED_RESULT, EXPECTED_FLAGS = self._add(OPERAND1, OPERAND2, carry_in= INITIAL_CARRY_STATUS)
 
             self._carry_update(INITIAL_CARRY_STATUS)
-            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
+            self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_adc_a_non_register(self):
         OPCODES_TO_ITERATE = { opcodes.ADC_A_HL, opcodes.ADC_A_IMM }
@@ -157,7 +152,7 @@ class TestCPU(unittest.TestCase):
             MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND2) if opcode in IMMEDIATE_OPCODES else (OPERAND2, 0)
             self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE, IMMEDIATE_VALUE)
             self._carry_update(INITIAL_CARRY_STATUS)
-            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
+            self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_sub_a_register(self, compare=False):
         SUB_OPERANDS = {
@@ -187,7 +182,7 @@ class TestCPU(unittest.TestCase):
             EXPECTED_RESULT, EXPECTED_FLAGS = self._sub(OPERAND1, OPERAND2, carry_in=0)
 
             self._carry_update(INITIAL_CARRY_STATUS)
-            self._run(opcode, OPERAND1, OPERAND1 if compare else EXPECTED_RESULT, EXPECTED_FLAGS)
+            self._set_register_a_step_assert(opcode, OPERAND1, OPERAND1 if compare else EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_sub_a_non_register(self, compare=False):
         OPCODES_TO_ITERATE = { opcodes.CP_A_HL, opcodes.CP_A_IMM } if compare else { opcodes.SUB_A_HL, opcodes.SUB_A_IMM }
@@ -200,7 +195,7 @@ class TestCPU(unittest.TestCase):
             MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND2) if opcode in IMMEDIATE_OPCODES else (OPERAND2, 0)
             self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE, IMMEDIATE_VALUE)
             self._carry_update(INITIAL_CARRY_STATUS)
-            self._run(opcode, OPERAND1, OPERAND1 if compare else EXPECTED_RESULT, EXPECTED_FLAGS)
+            self._set_register_a_step_assert(opcode, OPERAND1, OPERAND1 if compare else EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_cp_a_register(self):
         self.test_sub_a_register(compare=True)
@@ -225,7 +220,7 @@ class TestCPU(unittest.TestCase):
             EXPECTED_RESULT, EXPECTED_FLAGS = self._sub(OPERAND1, OPERAND2, carry_in=INITIAL_CARRY_STATUS)
 
             self._carry_update(INITIAL_CARRY_STATUS)
-            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
+            self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_sbc_a_non_register(self):
         OPCODES_TO_ITERATE = { opcodes.SBC_A_HL, opcodes.SBC_A_IMM }
@@ -238,7 +233,7 @@ class TestCPU(unittest.TestCase):
             MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND2) if opcode in IMMEDIATE_OPCODES else (OPERAND2, 0)
             self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE, IMMEDIATE_VALUE)
             self._carry_update(INITIAL_CARRY_STATUS)
-            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
+            self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_and_a_register(self):
         OPCODES_TO_ITERATE = {
@@ -255,7 +250,7 @@ class TestCPU(unittest.TestCase):
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT = OPERAND1 & OPERAND2
             EXPECTED_FLAGS = (FLAG_Z if EXPECTED_RESULT == 0 else 0) | FLAG_H  # Half carry is always set for AND operations
-            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
+            self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_xor_a_register(self):
         OPERANDS = {
@@ -272,7 +267,7 @@ class TestCPU(unittest.TestCase):
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT = OPERAND1 ^ OPERAND2
             EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0
-            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
+            self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_and_a_hl(self):
         OPCODES_TO_ITERATE = { opcodes.AND_A_HL, opcodes.AND_A_IMM }
@@ -284,7 +279,7 @@ class TestCPU(unittest.TestCase):
         for opcode in OPCODES_TO_ITERATE:
             MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND2) if opcode in IMMEDIATE_OPCODES else (OPERAND2, 0)
             self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE, IMMEDIATE_VALUE)
-            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
+            self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_xor_a_hl(self):
         OPCODES_TO_ITERATE = { opcodes.XOR_A_HL, opcodes.XOR_A_IMM }
@@ -295,7 +290,7 @@ class TestCPU(unittest.TestCase):
         for opcode in OPCODES_TO_ITERATE:
             MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND2) if opcode in IMMEDIATE_OPCODES else (OPERAND2, 0)
             self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE, IMMEDIATE_VALUE)
-            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
+            self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_or_a_register(self, OPERAND1 = 0x0F):
         OPCODES_TO_ITERATE = {
@@ -312,7 +307,7 @@ class TestCPU(unittest.TestCase):
             EXPECTED_RESULT = OPERAND1 | OPERAND2
             EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0
 
-            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
+            self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_or_a_hl(self):
         OPCODES_TO_ITERATE = { opcodes.OR_A_HL, opcodes.OR_A_IMM }
@@ -323,7 +318,7 @@ class TestCPU(unittest.TestCase):
         for opcode in OPCODES_TO_ITERATE:
             MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND2) if opcode in IMMEDIATE_OPCODES else (OPERAND2, 0)
             self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE, IMMEDIATE_VALUE)
-            self._run(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
+            self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
 if __name__ == '__main__':
     unittest.main()
