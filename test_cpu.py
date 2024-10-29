@@ -1,6 +1,7 @@
 import unittest
 from cpu import CPU, FLAG_Z, FLAG_N, FLAG_H, FLAG_C, REGISTER_A, REGISTER_F, REGISTER_B, REGISTER_C, REGISTER_D, REGISTER_E, REGISTER_H, REGISTER_L
 from memory import Memory
+# Maybe we shouldn't import opcodes but hardcode them in the tests
 import opcodes
 
 IMMEDIATE_OPCODES = { opcodes.ADD_A_IMM, opcodes.ADC_A_IMM, opcodes.SUB_A_IMM, opcodes.SBC_A_IMM, opcodes.AND_A_IMM, opcodes.XOR_A_IMM, opcodes.OR_A_IMM,  opcodes.CP_A_IMM, }
@@ -110,7 +111,7 @@ class TestCPU(unittest.TestCase):
             self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_add_a_non_register(self):
-        OPCODES_TO_ITERATE = { opcodes.ADD_A_HL, opcodes.ADD_A_IMM }
+        OPCODES_TO_ITERATE = { opcodes.ADD_A__HL_, opcodes.ADD_A_IMM }
         INITIAL_CARRY_STATUS = 1
         OPERAND1 = 0x01
         OPERAND2 = 0x02
@@ -142,7 +143,7 @@ class TestCPU(unittest.TestCase):
             self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_adc_a_non_register(self):
-        OPCODES_TO_ITERATE = { opcodes.ADC_A_HL, opcodes.ADC_A_IMM }
+        OPCODES_TO_ITERATE = { opcodes.ADC_A__HL_, opcodes.ADC_A_IMM }
         INITIAL_CARRY_STATUS = 1
         OPERAND1 = 0x01
         OPERAND2 = 0x02
@@ -185,7 +186,7 @@ class TestCPU(unittest.TestCase):
             self._set_register_a_step_assert(opcode, OPERAND1, OPERAND1 if compare else EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_sub_a_non_register(self, compare=False):
-        OPCODES_TO_ITERATE = { opcodes.CP_A_HL, opcodes.CP_A_IMM } if compare else { opcodes.SUB_A_HL, opcodes.SUB_A_IMM }
+        OPCODES_TO_ITERATE = { opcodes.CP_A__HL_, opcodes.CP_A_IMM } if compare else { opcodes.SUB_A__HL_, opcodes.SUB_A_IMM }
         INITIAL_CARRY_STATUS = 1
         OPERAND1 = 0x03
         OPERAND2 = 0x02
@@ -223,7 +224,7 @@ class TestCPU(unittest.TestCase):
             self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_sbc_a_non_register(self):
-        OPCODES_TO_ITERATE = { opcodes.SBC_A_HL, opcodes.SBC_A_IMM }
+        OPCODES_TO_ITERATE = { opcodes.SBC_A__HL_, opcodes.SBC_A_IMM }
         INITIAL_CARRY_STATUS = 1
         OPERAND1 = 0x03
         OPERAND2 = 0x02
@@ -270,7 +271,7 @@ class TestCPU(unittest.TestCase):
             self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_and_a_hl(self):
-        OPCODES_TO_ITERATE = { opcodes.AND_A_HL, opcodes.AND_A_IMM }
+        OPCODES_TO_ITERATE = { opcodes.AND_A__HL_, opcodes.AND_A_IMM }
         OPERAND1, OPERAND2 = 0x0F, 0x03
         EXPECTED_RESULT = OPERAND1 & OPERAND2
         EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0 | FLAG_H  # Half carry is always set for AND operations
@@ -282,7 +283,7 @@ class TestCPU(unittest.TestCase):
             self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_xor_a_hl(self):
-        OPCODES_TO_ITERATE = { opcodes.XOR_A_HL, opcodes.XOR_A_IMM }
+        OPCODES_TO_ITERATE = { opcodes.XOR_A__HL_, opcodes.XOR_A_IMM }
         OPERAND1, OPERAND2 = 0x0F, 0x03
         EXPECTED_RESULT = OPERAND1 ^ OPERAND2
         EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0
@@ -310,7 +311,7 @@ class TestCPU(unittest.TestCase):
             self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_or_a_hl(self):
-        OPCODES_TO_ITERATE = { opcodes.OR_A_HL, opcodes.OR_A_IMM }
+        OPCODES_TO_ITERATE = { opcodes.OR_A__HL_, opcodes.OR_A_IMM }
         OPERAND1, OPERAND2 = 0x0F, 0x03
         EXPECTED_RESULT = OPERAND1 | OPERAND2
         EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0

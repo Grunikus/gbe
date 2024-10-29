@@ -1,14 +1,15 @@
 from memory import Memory
 from opcodes import (
+    INC_B, DEC_B, INC_C, DEC_C, INC_D, DEC_D, INC_E, DEC_E, INC_H, DEC_H, INC_L, DEC_L, INC_A, DEC_A, INC_A, DEC_A,
     ADD_HL_BC, ADD_HL_DE, ADD_HL_HL, ADD_HL_SP,
-    ADD_A_B, ADD_A_C, ADD_A_D, ADD_A_E, ADD_A_H, ADD_A_L, ADD_A_HL, ADD_A_A,
-    ADC_A_B, ADC_A_C, ADC_A_D, ADC_A_E, ADC_A_H, ADC_A_L, ADC_A_HL, ADC_A_A,
-    SUB_A_B, SUB_A_C, SUB_A_D, SUB_A_E, SUB_A_H, SUB_A_L, SUB_A_HL, SUB_A_A,
-    SBC_A_B, SBC_A_C, SBC_A_D, SBC_A_E, SBC_A_H, SBC_A_L, SBC_A_HL, SBC_A_A,
-    AND_A_B, AND_A_C, AND_A_D, AND_A_E, AND_A_H, AND_A_L, AND_A_HL, AND_A_A,
-    XOR_A_B, XOR_A_C, XOR_A_D, XOR_A_E, XOR_A_H, XOR_A_L, XOR_A_HL, XOR_A_A,
-    OR_A_B, OR_A_C, OR_A_D, OR_A_E, OR_A_H, OR_A_L, OR_A_HL, OR_A_A,
-    CP_A_B, CP_A_C, CP_A_D, CP_A_E, CP_A_H, CP_A_L, CP_A_HL, CP_A_A,
+    ADD_A_B, ADD_A_C, ADD_A_D, ADD_A_E, ADD_A_H, ADD_A_L, ADD_A__HL_, ADD_A_A,
+    ADC_A_B, ADC_A_C, ADC_A_D, ADC_A_E, ADC_A_H, ADC_A_L, ADC_A__HL_, ADC_A_A,
+    SUB_A_B, SUB_A_C, SUB_A_D, SUB_A_E, SUB_A_H, SUB_A_L, SUB_A__HL_, SUB_A_A,
+    SBC_A_B, SBC_A_C, SBC_A_D, SBC_A_E, SBC_A_H, SBC_A_L, SBC_A__HL_, SBC_A_A,
+    AND_A_B, AND_A_C, AND_A_D, AND_A_E, AND_A_H, AND_A_L, AND_A__HL_, AND_A_A,
+    XOR_A_B, XOR_A_C, XOR_A_D, XOR_A_E, XOR_A_H, XOR_A_L, XOR_A__HL_, XOR_A_A,
+    OR_A_B, OR_A_C, OR_A_D, OR_A_E, OR_A_H, OR_A_L, OR_A__HL_, OR_A_A,
+    CP_A_B, CP_A_C, CP_A_D, CP_A_E, CP_A_H, CP_A_L, CP_A__HL_, CP_A_A,
     ADD_A_IMM, ADC_A_IMM, SUB_A_IMM, SBC_A_IMM,
     AND_A_IMM, XOR_A_IMM, OR_A_IMM, CP_A_IMM
 )
@@ -98,14 +99,14 @@ class CPU:
         _map_opcode_register_pairs_to_operation( [ (CP_A_A, REGISTER_A), (CP_A_B, REGISTER_B), (CP_A_C, REGISTER_C), (CP_A_D, REGISTER_D), (CP_A_E, REGISTER_E), (CP_A_H, REGISTER_H), (CP_A_L, REGISTER_L) ],
                             lambda self, value: self._sub_a(value, compare=True))
         # Define each set of operations with their HL and IMM opcodes
-        _map_opcode_hl_imm_to_operation(ADD_A_HL, ADD_A_IMM, lambda self, value: self._add_a(value))
-        _map_opcode_hl_imm_to_operation(ADC_A_HL, ADC_A_IMM, lambda self, value: self._add_a(value, use_carry=True))
-        _map_opcode_hl_imm_to_operation(SUB_A_HL, SUB_A_IMM, lambda self, value: self._sub_a(value))
-        _map_opcode_hl_imm_to_operation(SBC_A_HL, SBC_A_IMM, lambda self, value: self._sub_a(value, use_carry=True))
-        _map_opcode_hl_imm_to_operation(AND_A_HL, AND_A_IMM, lambda self, value: self._and_a(value))
-        _map_opcode_hl_imm_to_operation(XOR_A_HL, XOR_A_IMM, lambda self, value: self._xor_a(value))
-        _map_opcode_hl_imm_to_operation(OR_A_HL, OR_A_IMM, lambda self, value: self._or_a(value))
-        _map_opcode_hl_imm_to_operation(CP_A_HL, CP_A_IMM, lambda self, value: self._sub_a(value, compare=True))
+        _map_opcode_hl_imm_to_operation(ADD_A__HL_, ADD_A_IMM, lambda self, value: self._add_a(value))
+        _map_opcode_hl_imm_to_operation(ADC_A__HL_, ADC_A_IMM, lambda self, value: self._add_a(value, use_carry=True))
+        _map_opcode_hl_imm_to_operation(SUB_A__HL_, SUB_A_IMM, lambda self, value: self._sub_a(value))
+        _map_opcode_hl_imm_to_operation(SBC_A__HL_, SBC_A_IMM, lambda self, value: self._sub_a(value, use_carry=True))
+        _map_opcode_hl_imm_to_operation(AND_A__HL_, AND_A_IMM, lambda self, value: self._and_a(value))
+        _map_opcode_hl_imm_to_operation(XOR_A__HL_, XOR_A_IMM, lambda self, value: self._xor_a(value))
+        _map_opcode_hl_imm_to_operation(OR_A__HL_, OR_A_IMM, lambda self, value: self._or_a(value))
+        _map_opcode_hl_imm_to_operation(CP_A__HL_, CP_A_IMM, lambda self, value: self._sub_a(value, compare=True))
 
     def step(self):
         opcode = self.memory.read_byte(self.pc)
