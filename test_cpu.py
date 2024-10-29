@@ -42,8 +42,9 @@ class TestCPU(unittest.TestCase):
         self.memory.write_byte((H << 8) | L, hl_value)
         self.memory.write_byte(self.cpu.pc+1, immediate_value)
 
-    def _calculate_flags(self, result, carry_out, half_carry, is_subtraction):
-        z_flag = FLAG_Z if result == 0 else 0
+    def _calculate_flags(self, result, carry_out, half_carry, is_subtraction, modify_z=True):
+        if modify_z: z_flag = FLAG_Z if result == 0 else 0
+        else: z_flag = self.cpu.registers[REGISTER_F] & FLAG_Z
         n_flag = FLAG_N if is_subtraction else 0
         h_flag = FLAG_H if half_carry else 0
         c_flag = FLAG_C if carry_out else 0
@@ -77,9 +78,10 @@ class TestCPU(unittest.TestCase):
 
     def _add_16bit(self, operand1, operand2):
         result = operand1 + operand2
+        return_value = result & 0xFFFF
         carry_out = result > 0xFFFF
         half_carry = ((operand1 & 0x0FFF) + (operand2 & 0x0FFF)) > 0x0FFF
-        return result & 0xFFFF, self._calculate_flags(True, carry_out, half_carry, False)
+        return return_value, self._calculate_flags(return_value, carry_out, half_carry, is_subtraction=False, modify_z=False)
 
     def test_add_hl_register(self):
         OPCODES_TO_ITERATE = {
@@ -89,9 +91,10 @@ class TestCPU(unittest.TestCase):
             # opcodes.ADD_HL_SP: (REGISTER_S, REGISTER_P),  # TODO: There's only cpu.sp
         }
         for opcode, (register1, register2) in OPCODES_TO_ITERATE.items():
+            if opcode == opcodes.ADD_HL_HL: self.cpu.registers[REGISTER_H], self.cpu.registers[REGISTER_L] = 0, 0
             OPERAND_1 = (self.cpu.registers[REGISTER_H] << 8) | self.cpu.registers[REGISTER_L]
             OPERAND_2 = (self.cpu.registers[register1] << 8) | self.cpu.registers[register2]
-            expected_result, expected_flags = self._add_16bit(OPERAND_1, OPERAND_2)  # TODO: flags can be unmodified; In this case Z should be.
+            expected_result, expected_flags = self._add_16bit(OPERAND_1, OPERAND_2)
             self._run_add_hl(opcode, expected_result, expected_flags)
 
     def test_add_a_register(self):
