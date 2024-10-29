@@ -4,7 +4,7 @@ from memory import Memory
 # Maybe we shouldn't import opcodes but hardcode them in the tests
 import opcodes
 
-IMMEDIATE_OPCODES = { opcodes.ADD_A_IMM, opcodes.ADC_A_IMM, opcodes.SUB_A_IMM, opcodes.SBC_A_IMM, opcodes.AND_A_IMM, opcodes.XOR_A_IMM, opcodes.OR_A_IMM,  opcodes.CP_A_IMM, }
+IMMEDIATE_OPCODES = ( opcodes.ADD_A_IMM, opcodes.ADC_A_IMM, opcodes.SUB_A_IMM, opcodes.SBC_A_IMM, opcodes.AND_A_IMM, opcodes.XOR_A_IMM, opcodes.OR_A_IMM,  opcodes.CP_A_IMM, )
 
 class TestCPU(unittest.TestCase):
     def setUp(self):
