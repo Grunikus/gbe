@@ -70,6 +70,9 @@ class CPU:
         self.registers[REGISTER_L] = value16 & 0xFF
 
     def _fill_instruction_map(self):
+        def _map_inc_dec_opcode_register_pairs_to_operation(opcode_register_groups, operation, **kwargs):
+            for opcode, register in opcode_register_groups:
+                self.INSTRUCTION_MAP[opcode] = lambda self, reg=register: operation(self, reg, **kwargs)
         def _map_opcode_register16_pairs_to_operation(opcode_register_groups, operation, **kwargs):
             for opcode, register_pair in opcode_register_groups:
                 self.INSTRUCTION_MAP[opcode] = lambda self, reg_pair=register_pair: operation(self, getattr(self, reg_pair), **kwargs)
@@ -80,6 +83,12 @@ class CPU:
             self.INSTRUCTION_MAP[opcode_hl] = lambda self: operation(self, self._read_byte_at_memory_hl(), **kwargs)
             self.INSTRUCTION_MAP[opcode_imm] = lambda self: (operation(self, self.memory.read_byte(self.pc), **kwargs), setattr(self, 'pc', self.pc + 1))
         # Define the opcode-register pairs and call add_instruction_map with the appropriate function and flags
+        _map_inc_dec_opcode_register_pairs_to_operation( [ (INC_B, REGISTER_B), (INC_C, REGISTER_C), (INC_D, REGISTER_D), (INC_E, REGISTER_E), (INC_H, REGISTER_H), (INC_L, REGISTER_L), (INC_A, REGISTER_A) ],
+                            lambda self, register: self._inc(register))
+        _map_inc_dec_opcode_register_pairs_to_operation( [ (DEC_B, REGISTER_B), (DEC_C, REGISTER_C), (DEC_D, REGISTER_D), (DEC_E, REGISTER_E), (DEC_H, REGISTER_H), (DEC_L, REGISTER_L), (DEC_A, REGISTER_A) ],
+                            lambda self, register: self._dec(register))
+        self.INSTRUCTION_MAP[INC__HL_] = lambda self: self._inc__hl_()
+        self.INSTRUCTION_MAP[DEC__HL_] = lambda self: self._dec__hl_()
         _map_opcode_register16_pairs_to_operation( [(ADD_HL_BC, 'BC'), (ADD_HL_DE, 'DE'), (ADD_HL_HL, 'HL'), (ADD_HL_SP, 'sp') ],
             lambda self, value: self._add_hl(value))
         _map_opcode_register_pairs_to_operation([ (ADD_A_A, REGISTER_A), (ADD_A_B, REGISTER_B), (ADD_A_C, REGISTER_C), (ADD_A_D, REGISTER_D), (ADD_A_E, REGISTER_E), (ADD_A_H, REGISTER_H), (ADD_A_L, REGISTER_L) ],
@@ -117,6 +126,84 @@ class CPU:
         address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
         memory_value = self.memory.read_byte(address)
         return memory_value
+
+    def _inc(self, register):
+        """Increment the specified register by 1."""
+        self.registers[register] += 1
+        self.registers[register] &= 0xFF  # Ensure it wraps around at 8 bits
+
+        # Update flags
+        if self.registers[register] == 0:
+            self.registers[REGISTER_F] |= FLAG_Z  # Set Zero flag
+        else:
+            self.registers[REGISTER_F] &= ~FLAG_Z  # Clear Zero flag
+
+        # Half carry is set if the lower 4 bits go from 0x0F to 0x10
+        if (self.registers[register] & 0x0F) == 0x00:
+            self.registers[REGISTER_F] |= FLAG_H  # Set Half Carry flag
+        else:
+            self.registers[REGISTER_F] &= ~FLAG_H  # Clear Half Carry flag
+
+        self.registers[REGISTER_F] &= ~FLAG_N  # Clear Subtract flag
+
+    def _dec(self, register):
+        """Decrement the specified register by 1."""
+        self.registers[register] -= 1
+        self.registers[register] &= 0xFF  # Ensure it wraps around at 8 bits
+
+        # Update flags
+        if self.registers[register] == 0:
+            self.registers[REGISTER_F] |= FLAG_Z  # Set Zero flag
+        else:
+            self.registers[REGISTER_F] &= ~FLAG_Z  # Clear Zero flag
+
+        # Half carry is set if the lower 4 bits go from 0x00 to 0x0F
+        if (self.registers[register] & 0x0F) == 0x0F:
+            self.registers[REGISTER_F] |= FLAG_H  # Set Half Carry flag
+        else:
+            self.registers[REGISTER_F] &= ~FLAG_H  # Clear Half Carry flag
+
+        self.registers[REGISTER_F] |= FLAG_N  # Set Subtract flag
+
+    def _inc__hl_(self):
+        """Increment the value at the address pointed to by HL."""
+        address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
+        value = self.memory.read_byte(address)
+        incremented_value = (value + 1) & 0xFF  # Increment and ensure it wraps around
+        self.memory.write_byte(address, incremented_value)
+
+        # Update flags
+        if incremented_value == 0:
+            self.registers[REGISTER_F] |= FLAG_Z  # Set Zero flag
+        else:
+            self.registers[REGISTER_F] &= ~FLAG_Z  # Clear Zero flag
+
+        if (value & 0x0F) == 0x0F:
+            self.registers[REGISTER_F] |= FLAG_H  # Set Half Carry flag
+        else:
+            self.registers[REGISTER_F] &= ~FLAG_H  # Clear Half Carry flag
+
+        self.registers[REGISTER_F] &= ~FLAG_N  # Clear Subtract flag
+
+    def _dec__hl_(self):
+        """Decrement the value at the address pointed to by HL."""
+        address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
+        value = self.memory.read_byte(address)
+        decremented_value = (value - 1) & 0xFF  # Decrement and ensure it wraps around
+        self.memory.write_byte(address, decremented_value)
+
+        # Update flags
+        if decremented_value == 0:
+            self.registers[REGISTER_F] |= FLAG_Z  # Set Zero flag
+        else:
+            self.registers[REGISTER_F] &= ~FLAG_Z  # Clear Zero flag
+
+        if (value & 0x0F) == 0x00:
+            self.registers[REGISTER_F] |= FLAG_H  # Set Half Carry flag
+        else:
+            self.registers[REGISTER_F] &= ~FLAG_H  # Clear Half Carry flag
+
+        self.registers[REGISTER_F] |= FLAG_N  # Set Subtract flag
 
     def _add_hl(self, operand_16):
         previous_hl = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]

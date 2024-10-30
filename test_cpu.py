@@ -36,17 +36,30 @@ class TestCPU(unittest.TestCase):
         self.memory.write_byte((H << 8) | L, hl_value)
         self.memory.write_byte(self.cpu.pc+1, immediate_value)
 
-    def _calculate_flags(self, result, carry_out, half_carry, is_subtraction, modify_z=True):
+    def _calculate_flags(self, result, carry_out, half_carry, is_subtraction, modify_z=True, modify_c=True):
         if modify_z: z_flag = FLAG_Z if result == 0 else 0
         else: z_flag = self.cpu.registers[REGISTER_F] & FLAG_Z
         n_flag = FLAG_N if is_subtraction else 0
         h_flag = FLAG_H if half_carry else 0
-        c_flag = FLAG_C if carry_out else 0
+        if modify_c: c_flag = FLAG_C if carry_out else 0
+        else: c_flag = self.cpu.registers[REGISTER_F] & FLAG_C
         return z_flag | n_flag | h_flag | c_flag
 
     def _carry_update(self, INITIAL_CARRY_STATUS):
         if INITIAL_CARRY_STATUS: self.cpu.registers[REGISTER_F] |= FLAG_C
         else: self.cpu.registers[REGISTER_F] &= ~FLAG_C
+
+    def _inc(self, operand):
+        result = (operand + 1) & 0xFF
+        half_carry = (operand & 0x0F) == 0x0F
+        flags = self._calculate_flags(result, carry_out=False, half_carry=half_carry, is_subtraction=False, modify_c=False)
+        return result, flags
+
+    def _dec(self, operand):
+        result = (operand - 1) & 0xFF
+        half_carry = (operand & 0x0F) == 0
+        flags = self._calculate_flags(result, carry_out=False, half_carry=half_carry, is_subtraction=True, modify_c=False)
+        return result, flags
 
     def _add(self, operand1, operand2, carry_in):
         carry_in = 1 if carry_in else 0
@@ -76,6 +89,64 @@ class TestCPU(unittest.TestCase):
         carry_out = result > 0xFFFF
         half_carry = ((operand1 & 0x0FFF) + (operand2 & 0x0FFF)) > 0x0FFF
         return return_value, self._calculate_flags(return_value, carry_out, half_carry, is_subtraction=False, modify_z=False)
+
+    def test_inc_register(self):
+        OPCODES_TO_ITERATE = {
+            opcodes.INC_B: REGISTER_B,
+            opcodes.INC_C: REGISTER_C,
+            opcodes.INC_D: REGISTER_D,
+            opcodes.INC_E: REGISTER_E,
+            opcodes.INC_H: REGISTER_H,
+            opcodes.INC_L: REGISTER_L,
+            opcodes.INC_A: REGISTER_A,
+        }
+        for opcode, register in OPCODES_TO_ITERATE.items():
+            initial_value = self.cpu.registers[register]
+            expected_result, expected_flags = self._inc(initial_value)
+            
+            self._step_and_assert_flags(opcode, expected_flags)
+            self.assertEqual(self.cpu.registers[register], expected_result, f"{opcode=}")
+
+    def test_inc_non_register(self):
+        opcode = opcodes.INC__HL_
+        INITIAL_CARRY_STATUS = 1
+        self._carry_update(INITIAL_CARRY_STATUS)
+        OPERAND = 0xFF
+        EXPECTED_RESULT, EXPECTED_FLAGS = self._inc(OPERAND)
+        ADDR_HIGH, ADDR_LOW = 0x00, 0x10
+        MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND) if opcode in IMMEDIATE_OPCODES else (OPERAND, 0)
+        self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE, IMMEDIATE_VALUE)
+        self._step_and_assert_flags(opcode, EXPECTED_FLAGS)
+        self.assertEqual(self.memory.read_byte((ADDR_HIGH << 8) | ADDR_LOW), EXPECTED_RESULT, f"{opcode=}")
+
+    def test_dec_register(self):
+        OPCODES_TO_ITERATE = {
+            opcodes.DEC_B: REGISTER_B,
+            opcodes.DEC_C: REGISTER_C,
+            opcodes.DEC_D: REGISTER_D,
+            opcodes.DEC_E: REGISTER_E,
+            opcodes.DEC_H: REGISTER_H,
+            opcodes.DEC_L: REGISTER_L,
+            opcodes.DEC_A: REGISTER_A,
+        }
+        for opcode, register in OPCODES_TO_ITERATE.items():
+            initial_value = self.cpu.registers[register]
+            expected_result, expected_flags = self._dec(initial_value)
+            
+            self._step_and_assert_flags(opcode, expected_flags)
+            self.assertEqual(self.cpu.registers[register], expected_result, f"{opcode=}")
+
+    def test_dec_non_register(self):
+        opcode = opcodes.DEC__HL_
+        INITIAL_CARRY_STATUS = 1
+        self._carry_update(INITIAL_CARRY_STATUS)
+        OPERAND = 0xFF
+        EXPECTED_RESULT, EXPECTED_FLAGS = self._dec(OPERAND)
+        ADDR_HIGH, ADDR_LOW = 0x00, 0x10
+        MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND) if opcode in IMMEDIATE_OPCODES else (OPERAND, 0)
+        self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE, IMMEDIATE_VALUE)
+        self._step_and_assert_flags(opcode, EXPECTED_FLAGS)
+        self.assertEqual(self.memory.read_byte((ADDR_HIGH << 8) | ADDR_LOW), EXPECTED_RESULT, f"{opcode=}")
 
     def test_add_hl_register(self):
         OPCODES_TO_ITERATE = {
