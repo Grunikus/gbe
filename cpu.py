@@ -40,7 +40,6 @@ class CPU:
         self.registers = [0x00] * 8
         self.pc = START_PC
         self.sp = START_SP
-        self.INSTRUCTION_MAP = {}
         self._fill_instruction_map()
 
     # Properties for register pairs (e.g., BC, DE, HL)
@@ -72,6 +71,7 @@ class CPU:
         self.registers[REGISTER_L] = value16 & 0xFF
 
     def _fill_instruction_map(self):
+        self.INSTRUCTION_MAP = {}
         self.INSTRUCTION_MAP[DAA] = lambda self: self._daa()
         def _map_inc_dec_opcode_register_pairs_to_operation(opcode_register_groups, operation, **kwargs):
             for opcode, register in opcode_register_groups:
