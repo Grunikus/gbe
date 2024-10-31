@@ -1,5 +1,6 @@
 from memory import Memory
 from opcodes import (
+    INC_BC, DEC_BC, INC_DE, DEC_DE, INC_HL, DEC_HL, INC_SP, DEC_SP,
     INC_B, DEC_B, INC_C, DEC_C, INC_D, DEC_D, INC_E, DEC_E, INC_H, DEC_H, INC_L, DEC_L, INC__HL_, DEC__HL_, INC_A, DEC_A,
     ADD_HL_BC, ADD_HL_DE, ADD_HL_HL, ADD_HL_SP,
     ADD_A_B, ADD_A_C, ADD_A_D, ADD_A_E, ADD_A_H, ADD_A_L, ADD_A__HL_, ADD_A_A,
@@ -73,7 +74,10 @@ class CPU:
         def _map_inc_dec_opcode_register_pairs_to_operation(opcode_register_groups, operation, **kwargs):
             for opcode, register in opcode_register_groups:
                 self.INSTRUCTION_MAP[opcode] = lambda self, reg=register: operation(self, reg, **kwargs)
-        def _map_opcode_register16_pairs_to_operation(opcode_register_groups, operation, **kwargs):
+        def _map_opcode_inc_dec_16_pairs_to_operation(opcode_register_groups, operation, **kwargs):
+            for opcode, register16 in opcode_register_groups:
+                self.INSTRUCTION_MAP[opcode] = lambda self, reg16=register16: operation(self, reg16, **kwargs)
+        def _map_opcode_add_hl_register16_pairs_to_operation(opcode_register_groups, operation, **kwargs):
             for opcode, register_pair in opcode_register_groups:
                 self.INSTRUCTION_MAP[opcode] = lambda self, reg_pair=register_pair: operation(self, getattr(self, reg_pair), **kwargs)
         def _map_opcode_register_pairs_to_operation(opcode_register_pairs, operation, **kwargs):
@@ -83,14 +87,18 @@ class CPU:
             self.INSTRUCTION_MAP[opcode_hl] = lambda self: operation(self, self._read_byte_at_memory_hl(), **kwargs)
             self.INSTRUCTION_MAP[opcode_imm] = lambda self: (operation(self, self.memory.read_byte(self.pc), **kwargs), setattr(self, 'pc', self.pc + 1))
         # Define the opcode-register pairs and call add_instruction_map with the appropriate function and flags
+        _map_opcode_inc_dec_16_pairs_to_operation( [(INC_BC, 'BC'), (INC_DE, 'DE'), (INC_HL, 'HL'), (INC_SP, 'sp')],
+            lambda self, value: self._inc16(value) )
+        _map_opcode_inc_dec_16_pairs_to_operation( [(DEC_BC, 'BC'), (DEC_DE, 'DE'), (DEC_HL, 'HL'), (DEC_SP, 'sp') ],
+            lambda self, value: self._dec16(value) )
         _map_inc_dec_opcode_register_pairs_to_operation( [ (INC_B, REGISTER_B), (INC_C, REGISTER_C), (INC_D, REGISTER_D), (INC_E, REGISTER_E), (INC_H, REGISTER_H), (INC_L, REGISTER_L), (INC_A, REGISTER_A) ],
                             lambda self, register: self._inc(register))
         _map_inc_dec_opcode_register_pairs_to_operation( [ (DEC_B, REGISTER_B), (DEC_C, REGISTER_C), (DEC_D, REGISTER_D), (DEC_E, REGISTER_E), (DEC_H, REGISTER_H), (DEC_L, REGISTER_L), (DEC_A, REGISTER_A) ],
                             lambda self, register: self._dec(register))
         self.INSTRUCTION_MAP[INC__HL_] = lambda self: self._inc__hl_()
         self.INSTRUCTION_MAP[DEC__HL_] = lambda self: self._dec__hl_()
-        _map_opcode_register16_pairs_to_operation( [(ADD_HL_BC, 'BC'), (ADD_HL_DE, 'DE'), (ADD_HL_HL, 'HL'), (ADD_HL_SP, 'sp') ],
-            lambda self, value: self._add_hl(value))
+        _map_opcode_add_hl_register16_pairs_to_operation( [(ADD_HL_BC, 'BC'), (ADD_HL_DE, 'DE'), (ADD_HL_HL, 'HL'), (ADD_HL_SP, 'sp') ],
+            lambda self, value: self._add_hl_16(value))
         _map_opcode_register_pairs_to_operation([ (ADD_A_A, REGISTER_A), (ADD_A_B, REGISTER_B), (ADD_A_C, REGISTER_C), (ADD_A_D, REGISTER_D), (ADD_A_E, REGISTER_E), (ADD_A_H, REGISTER_H), (ADD_A_L, REGISTER_L) ],
                             lambda self, value: self._add_a(value))
         _map_opcode_register_pairs_to_operation( [ (ADC_A_A, REGISTER_A), (ADC_A_B, REGISTER_B), (ADC_A_C, REGISTER_C), (ADC_A_D, REGISTER_D), (ADC_A_E, REGISTER_E), (ADC_A_H, REGISTER_H), (ADC_A_L, REGISTER_L) ],
@@ -126,6 +134,16 @@ class CPU:
         address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
         memory_value = self.memory.read_byte(address)
         return memory_value
+
+    def _inc16(self, register_name):
+        previous_value = getattr(self, register_name)
+        next_value = (previous_value + 1) & 0xFFFF
+        setattr(self, register_name, next_value)
+
+    def _dec16(self, register_name):
+        previous_value = getattr(self, register_name)
+        next_value = (previous_value - 1) & 0xFFFF
+        setattr(self, register_name, next_value)
 
     def _inc(self, register):
         """Increment the specified register by 1."""
@@ -205,7 +223,7 @@ class CPU:
 
         self.registers[REGISTER_F] |= FLAG_N  # Set Subtract flag
 
-    def _add_hl(self, operand_16):
+    def _add_hl_16(self, operand_16):
         previous_hl = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
         result = previous_hl + operand_16
 

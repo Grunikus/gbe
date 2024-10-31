@@ -49,6 +49,16 @@ class TestCPU(unittest.TestCase):
         if INITIAL_CARRY_STATUS: self.cpu.registers[REGISTER_F] |= FLAG_C
         else: self.cpu.registers[REGISTER_F] &= ~FLAG_C
 
+    def _inc16(self, operand):
+        result = (operand + 1) & 0xFFFF
+        expected_flags = self.cpu.registers[REGISTER_F]
+        return result, expected_flags
+
+    def _dec16(self, operand):
+        result = (operand + -1) & 0xFFFF
+        expected_flags = self.cpu.registers[REGISTER_F]
+        return result, expected_flags
+
     def _inc(self, operand):
         result = (operand + 1) & 0xFF
         half_carry = (operand & 0x0F) == 0x0F
@@ -89,6 +99,46 @@ class TestCPU(unittest.TestCase):
         carry_out = result > 0xFFFF
         half_carry = ((operand1 & 0x0FFF) + (operand2 & 0x0FFF)) > 0x0FFF
         return return_value, self._calculate_flags(return_value, carry_out, half_carry, is_subtraction=False, modify_z=False)
+
+    def test_inc16_register_pairs(self):
+        OPCODES_TO_ITERATE = {
+            opcodes.INC_BC: "BC",
+            opcodes.INC_DE: "DE",
+            opcodes.INC_HL: "HL",
+            opcodes.INC_SP: "sp",
+        }
+        for opcode, register_pair in OPCODES_TO_ITERATE.items():
+            initial_value = getattr(self.cpu, register_pair)
+            
+            # Adjust expected_result to handle 16-bit overflow behavior
+            expected_result, expected_flags = self._inc16(initial_value)
+            
+            self.memory.write_byte(self.cpu.pc, opcode)
+            self.cpu.step()
+            
+            # Assert the updated values match expectations
+            self.assertEqual(getattr(self.cpu, register_pair), expected_result, f"{opcode=}")
+            self.assertEqual(self.cpu.registers[REGISTER_F], expected_flags, f"{opcode=}")
+
+    def test_dec16_register_pairs(self):
+        OPCODES_TO_ITERATE = {
+            opcodes.DEC_BC: "BC",
+            opcodes.DEC_DE: "DE",
+            opcodes.DEC_HL: "HL",
+            opcodes.DEC_SP: "sp",
+        }
+        for opcode, register_pair in OPCODES_TO_ITERATE.items():
+            initial_value = getattr(self.cpu, register_pair)
+            
+            # Adjust expected_result to handle 16-bit overflow behavior
+            expected_result, expected_flags = self._dec16(initial_value)
+            
+            self.memory.write_byte(self.cpu.pc, opcode)
+            self.cpu.step()
+            
+            # Assert the updated values match expectations
+            self.assertEqual(getattr(self.cpu, register_pair), expected_result, f"{opcode=}")
+            self.assertEqual(self.cpu.registers[REGISTER_F], expected_flags, f"{opcode=}")
 
     def test_inc_register(self):
         OPCODES_TO_ITERATE = {
