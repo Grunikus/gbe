@@ -260,11 +260,15 @@ class CPU:
         # Clear the N flag as this is an addition
         self.registers[REGISTER_F] &= ~FLAG_N
         # Set the H flag if there is a half-carry from bit 11 to bit 12
-        if ((previous_hl & 0x0FFF) + (operand_16 & 0x0FFF)) > 0x0FFF: self.registers[REGISTER_F] |= FLAG_H
-        else: self.registers[REGISTER_F] &= ~FLAG_H
+        if ((previous_hl & 0x0FFF) + (operand_16 & 0x0FFF)) > 0x0FFF:
+            self.registers[REGISTER_F] |= FLAG_H
+        else:
+            self.registers[REGISTER_F] &= ~FLAG_H
         # Set the C flag if there is a carry from bit 15
-        if result > 0xFFFF: self.registers[REGISTER_F] |= FLAG_C
-        else: self.registers[REGISTER_F] &= ~FLAG_C
+        if result > 0xFFFF:
+            self.registers[REGISTER_F] |= FLAG_C
+        else:
+            self.registers[REGISTER_F] &= ~FLAG_C
 
     def _add_a(self, operand_2, use_carry=False):
         carry = (self.registers[REGISTER_F] & FLAG_C) >> 4  if use_carry else 0
@@ -285,7 +289,8 @@ class CPU:
         carry = (self.registers[REGISTER_F] & FLAG_C) >> 4 if use_carry else 0
         operand_1 = self.registers[REGISTER_A]
         result = operand_1 - operand_2 - carry
-        if not compare: self.registers[REGISTER_A] = result & 0xFF
+        if not compare:
+            self.registers[REGISTER_A] = result & 0xFF
 
         self.registers[REGISTER_F] = 0x00
         if result & 0xFF == 0:

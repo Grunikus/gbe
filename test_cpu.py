@@ -44,8 +44,10 @@ class TestCPU(unittest.TestCase):
         return flag_z | flag_n | flag_h | flag_c
 
     def _carry_update(self, INITIAL_CARRY_STATUS):
-        if INITIAL_CARRY_STATUS: self.cpu.registers[REGISTER_F] |= FLAG_C
-        else: self.cpu.registers[REGISTER_F] &= ~FLAG_C
+        if INITIAL_CARRY_STATUS:
+            self.cpu.registers[REGISTER_F] |= FLAG_C
+        else:
+            self.cpu.registers[REGISTER_F] &= ~FLAG_C
 
     def _inc16(self, operand):
         result = (operand + 1) & 0xFFFF
@@ -234,7 +236,8 @@ class TestCPU(unittest.TestCase):
             opcodes.ADD_HL_SP: 'sp'
         }
         for opcode, register_pair in OPCODES_TO_ITERATE.items():
-            if opcode == opcodes.ADD_HL_HL: self.cpu.HL = 0  # Clear HL for HL + HL case
+            if opcode == opcodes.ADD_HL_HL:
+                self.cpu.HL = 0  # Clear HL for HL + HL case
             OPERAND_1 = self.cpu.HL
             OPERAND_2 = getattr(self.cpu, register_pair)
             expected_result, expected_flags = self._add_16bit(OPERAND_1, OPERAND_2)
