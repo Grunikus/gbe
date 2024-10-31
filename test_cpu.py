@@ -36,13 +36,11 @@ class TestCPU(unittest.TestCase):
         self.memory.write_byte((H << 8) | L, hl_value)
         self.memory.write_byte(self.cpu.pc+1, immediate_value)
 
-    def _calculate_flags(self, result, carry_out, half_carry, is_subtraction, modify_z=True, modify_c=True):
-        if modify_z: z_flag = FLAG_Z if result == 0 else 0
-        else: z_flag = self.cpu.registers[REGISTER_F] & FLAG_Z
-        n_flag = FLAG_N if is_subtraction else 0
-        h_flag = FLAG_H if half_carry else 0
-        if modify_c: c_flag = FLAG_C if carry_out else 0
-        else: c_flag = self.cpu.registers[REGISTER_F] & FLAG_C
+    def _set_flags(self, zero=None, is_subtraction=None, half_carry=None, carry_out=None, modify_z=True, modify_n=True, modify_h=True, modify_c=True):
+        z_flag = self.cpu.registers[REGISTER_F] & FLAG_Z if not modify_z else FLAG_Z if zero           else 0
+        n_flag = self.cpu.registers[REGISTER_F] & FLAG_N if not modify_n else FLAG_N if is_subtraction else 0
+        h_flag = self.cpu.registers[REGISTER_F] & FLAG_N if not modify_h else FLAG_H if half_carry     else 0
+        c_flag = self.cpu.registers[REGISTER_F] & FLAG_C if not modify_c else FLAG_C if carry_out      else 0
         return z_flag | n_flag | h_flag | c_flag
 
     def _carry_update(self, INITIAL_CARRY_STATUS):
@@ -62,13 +60,13 @@ class TestCPU(unittest.TestCase):
     def _inc(self, operand):
         result = (operand + 1) & 0xFF
         half_carry = (operand & 0x0F) == 0x0F
-        flags = self._calculate_flags(result, carry_out=False, half_carry=half_carry, is_subtraction=False, modify_c=False)
+        flags = self._set_flags(result==0, carry_out=False, half_carry=half_carry, is_subtraction=False, modify_c=False)
         return result, flags
 
     def _dec(self, operand):
         result = (operand - 1) & 0xFF
         half_carry = (operand & 0x0F) == 0
-        flags = self._calculate_flags(result, carry_out=False, half_carry=half_carry, is_subtraction=True, modify_c=False)
+        flags = self._set_flags(result==0, carry_out=False, half_carry=half_carry, is_subtraction=True, modify_c=False)
         return result, flags
 
     def _add(self, operand1, operand2, carry_in):
@@ -79,7 +77,7 @@ class TestCPU(unittest.TestCase):
 
         carry_out = result > 0xFF
         half_carry = ((operand1 & 0x0F) + (operand2 & 0x0F) + carry_in) > 0x0F
-        flags = self._calculate_flags(return_value, carry_out, half_carry, is_subtraction=False)
+        flags = self._set_flags(return_value==0, carry_out=carry_out, half_carry=half_carry, is_subtraction=False)
         return return_value,flags
 
     def _sub(self, operand1, operand2, carry_in):
@@ -90,7 +88,7 @@ class TestCPU(unittest.TestCase):
 
         carry_out = result < 0
         half_carry = ((operand1 & 0x0F) - (operand2 & 0x0F) - carry_in) < 0
-        flags = self._calculate_flags(return_value, carry_out, half_carry, is_subtraction=True)
+        flags = self._set_flags(return_value==0, carry_out=carry_out, half_carry=half_carry, is_subtraction=True)
         return return_value,flags
 
     def _add_16bit(self, operand1, operand2):
@@ -98,7 +96,7 @@ class TestCPU(unittest.TestCase):
         return_value = result & 0xFFFF
         carry_out = result > 0xFFFF
         half_carry = ((operand1 & 0x0FFF) + (operand2 & 0x0FFF)) > 0x0FFF
-        return return_value, self._calculate_flags(return_value, carry_out, half_carry, is_subtraction=False, modify_z=False)
+        return return_value, self._set_flags(return_value==0, carry_out=carry_out, half_carry=half_carry, is_subtraction=False, modify_z=False)
 
     def test_inc16_register_pairs(self):
         OPCODES_TO_ITERATE = {
