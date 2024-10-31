@@ -1,5 +1,6 @@
 from memory import Memory
 from opcodes import (
+    DAA,
     INC_BC, DEC_BC, INC_DE, DEC_DE, INC_HL, DEC_HL, INC_SP, DEC_SP,
     INC_B, DEC_B, INC_C, DEC_C, INC_D, DEC_D, INC_E, DEC_E, INC_H, DEC_H, INC_L, DEC_L, INC__HL_, DEC__HL_, INC_A, DEC_A,
     ADD_HL_BC, ADD_HL_DE, ADD_HL_HL, ADD_HL_SP,
@@ -71,6 +72,7 @@ class CPU:
         self.registers[REGISTER_L] = value16 & 0xFF
 
     def _fill_instruction_map(self):
+        self.INSTRUCTION_MAP[DAA] = lambda self: self._daa()
         def _map_inc_dec_opcode_register_pairs_to_operation(opcode_register_groups, operation, **kwargs):
             for opcode, register in opcode_register_groups:
                 self.INSTRUCTION_MAP[opcode] = lambda self, reg=register: operation(self, reg, **kwargs)
@@ -134,6 +136,31 @@ class CPU:
         address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
         memory_value = self.memory.read_byte(address)
         return memory_value
+
+    def _daa(self):
+        a = self.registers[REGISTER_A]
+        flag_n = self.registers[REGISTER_F] & FLAG_N
+        adjust = 0
+        carry = False
+
+        # Check flags to determine adjustment values
+        if (self.registers[REGISTER_F] & FLAG_H) or (not (flag_n) and (a & 0x0F) > 0x09):
+            adjust |= 0x06  # Add 0x06 to fix lower nibble
+        if (self.registers[REGISTER_F] & FLAG_C) or (not (flag_n) and a > 0x99):
+            adjust |= 0x60  # Add 0x60 to fix upper nibble
+            carry = True
+
+        # Apply adjustment based on N flag (add or subtract)
+        a = a + (-adjust if flag_n else adjust)
+        a &= 0xFF  # Keep result within 8 bits
+
+        # Update flags
+        self.registers[REGISTER_A] = a
+        self.registers[REGISTER_F] &= ~(FLAG_Z | FLAG_H)  # Clear Z and H flags
+        if a == 0:
+            self.registers[REGISTER_F] |= FLAG_Z  # Set Z if result is zero
+        if carry:
+            self.registers[REGISTER_F] |= FLAG_C  # Preserve or set C flag
 
     def _inc16(self, register_name):
         previous_value = getattr(self, register_name)

@@ -36,12 +36,12 @@ class TestCPU(unittest.TestCase):
         self.memory.write_byte((H << 8) | L, hl_value)
         self.memory.write_byte(self.cpu.pc+1, immediate_value)
 
-    def _set_flags(self, zero=None, is_subtraction=None, half_carry=None, carry_out=None, modify_z=True, modify_n=True, modify_h=True, modify_c=True):
-        z_flag = self.cpu.registers[REGISTER_F] & FLAG_Z if not modify_z else FLAG_Z if zero           else 0
-        n_flag = self.cpu.registers[REGISTER_F] & FLAG_N if not modify_n else FLAG_N if is_subtraction else 0
-        h_flag = self.cpu.registers[REGISTER_F] & FLAG_N if not modify_h else FLAG_H if half_carry     else 0
-        c_flag = self.cpu.registers[REGISTER_F] & FLAG_C if not modify_c else FLAG_C if carry_out      else 0
-        return z_flag | n_flag | h_flag | c_flag
+    def _register_f_from_flags(self, zero=None, is_subtraction=None, half_carry=None, carry_out=None, modify_z=True, modify_n=True, modify_h=True, modify_c=True):
+        flag_z = self.cpu.registers[REGISTER_F] & FLAG_Z if not modify_z else FLAG_Z if zero           else 0
+        flag_n = self.cpu.registers[REGISTER_F] & FLAG_N if not modify_n else FLAG_N if is_subtraction else 0
+        flag_h = self.cpu.registers[REGISTER_F] & FLAG_H if not modify_h else FLAG_H if half_carry     else 0
+        flag_c = self.cpu.registers[REGISTER_F] & FLAG_C if not modify_c else FLAG_C if carry_out      else 0
+        return flag_z | flag_n | flag_h | flag_c
 
     def _carry_update(self, INITIAL_CARRY_STATUS):
         if INITIAL_CARRY_STATUS: self.cpu.registers[REGISTER_F] |= FLAG_C
@@ -60,13 +60,13 @@ class TestCPU(unittest.TestCase):
     def _inc(self, operand):
         result = (operand + 1) & 0xFF
         half_carry = (operand & 0x0F) == 0x0F
-        flags = self._set_flags(result==0, carry_out=False, half_carry=half_carry, is_subtraction=False, modify_c=False)
+        flags = self._register_f_from_flags(result==0, carry_out=False, half_carry=half_carry, is_subtraction=False, modify_c=False)
         return result, flags
 
     def _dec(self, operand):
         result = (operand - 1) & 0xFF
         half_carry = (operand & 0x0F) == 0
-        flags = self._set_flags(result==0, carry_out=False, half_carry=half_carry, is_subtraction=True, modify_c=False)
+        flags = self._register_f_from_flags(result==0, carry_out=False, half_carry=half_carry, is_subtraction=True, modify_c=False)
         return result, flags
 
     def _add(self, operand1, operand2, carry_in):
@@ -77,7 +77,7 @@ class TestCPU(unittest.TestCase):
 
         carry_out = result > 0xFF
         half_carry = ((operand1 & 0x0F) + (operand2 & 0x0F) + carry_in) > 0x0F
-        flags = self._set_flags(return_value==0, carry_out=carry_out, half_carry=half_carry, is_subtraction=False)
+        flags = self._register_f_from_flags(return_value==0, carry_out=carry_out, half_carry=half_carry, is_subtraction=False)
         return return_value,flags
 
     def _sub(self, operand1, operand2, carry_in):
@@ -88,7 +88,7 @@ class TestCPU(unittest.TestCase):
 
         carry_out = result < 0
         half_carry = ((operand1 & 0x0F) - (operand2 & 0x0F) - carry_in) < 0
-        flags = self._set_flags(return_value==0, carry_out=carry_out, half_carry=half_carry, is_subtraction=True)
+        flags = self._register_f_from_flags(return_value==0, carry_out=carry_out, half_carry=half_carry, is_subtraction=True)
         return return_value,flags
 
     def _add_16bit(self, operand1, operand2):
@@ -96,7 +96,38 @@ class TestCPU(unittest.TestCase):
         return_value = result & 0xFFFF
         carry_out = result > 0xFFFF
         half_carry = ((operand1 & 0x0FFF) + (operand2 & 0x0FFF)) > 0x0FFF
-        return return_value, self._set_flags(return_value==0, carry_out=carry_out, half_carry=half_carry, is_subtraction=False, modify_z=False)
+        return return_value, self._register_f_from_flags(return_value==0, carry_out=carry_out, half_carry=half_carry, is_subtraction=False, modify_z=False)
+
+    def test_daa(self):
+
+        def _set_register_a_and_flags_step_assert_value_a(opcode, value_a_input, value_a_output, flag_z=False, flag_n=False, flag_h=False, flag_c=False):
+            self.cpu.registers[REGISTER_A] = value_a_input & 0xFF
+            self.cpu.registers[REGISTER_F] = self._register_f_from_flags(zero=flag_z, is_subtraction=flag_n, half_carry=flag_h, carry_out=flag_c)
+            self.memory.write_byte(self.cpu.pc, opcode)
+            self.cpu.step()
+            self.assertEqual(self.cpu.registers[REGISTER_A], value_a_output)
+
+        opcode = opcodes.DAA
+        # Test after ADD without any flags set
+        _set_register_a_and_flags_step_assert_value_a(opcode, 0x15, 0x15)
+        self.assertEqual(self.cpu.registers[REGISTER_F], 0x00)  # No flags set
+        # Test ADD that produces half-carry
+        _set_register_a_and_flags_step_assert_value_a(opcode, 0x0A, 0x10, flag_h=True)
+        self.assertEqual(self.cpu.registers[REGISTER_F] & FLAG_Z, 0)  # Zero flag should not be set
+        self.assertEqual(self.cpu.registers[REGISTER_F] & FLAG_H, 0)  # Half-carry should be cleared
+        # Test ADD that produces carry
+        _set_register_a_and_flags_step_assert_value_a(opcode, 0x9A, 0x00, flag_c=True)
+        self.assertTrue(self.cpu.registers[REGISTER_F] & FLAG_Z)  # Zero flag should be set
+        self.assertTrue(self.cpu.registers[REGISTER_F] & FLAG_C)  # Carry flag should remain set
+        # Test SUB without any flags set
+        _set_register_a_and_flags_step_assert_value_a(opcode, 0x15, 0x15, flag_n=True)
+        self.assertEqual(self.cpu.registers[REGISTER_F] & FLAG_C, 0)  # Carry should remain clear
+        # Test SUB that produced a half-carry
+        _set_register_a_and_flags_step_assert_value_a(opcode, 0x6B, 0x65, flag_n=True, flag_h=True)
+        self.assertEqual(self.cpu.registers[REGISTER_F] & FLAG_H, 0)  # Half-carry should be cleared
+        # Test SUB that produced carry
+        _set_register_a_and_flags_step_assert_value_a(opcode, 0xA0, 0x40, flag_n=True, flag_c=True)
+        self.assertTrue(self.cpu.registers[REGISTER_F] & FLAG_C)  # Carry flag should remain set
 
     def test_inc16_register_pairs(self):
         OPCODES_TO_ITERATE = {
