@@ -144,6 +144,54 @@ class TestCPU(unittest.TestCase):
         self._set_register_a_and_flags_step_assert_value_a(opcode, 0x5A, 0xA5, modify_z=False, modify_n=False, modify_h=False, modify_c=False)
         self.assertEqual(self.cpu.registers[REGISTER_F], flags_expected_status)
 
+    def test_scf(self):
+        opcode = opcodes.SCF  # Assume SCF opcode is correctly defined in the opcodes module
+
+        # Test when no flags are initially set
+        self.cpu.registers[REGISTER_F] = 0x00  # Clear all flags
+        self.memory.write_byte(self.cpu.pc, opcode)
+        self.cpu.step()
+        # Check that carry flag (C) is set
+        self.assertTrue(self.cpu.registers[REGISTER_F] & FLAG_C, "Carry flag should be set")
+        # Check that half-carry (H) and subtraction (N) flags are cleared
+        self.assertFalse(self.cpu.registers[REGISTER_F] & FLAG_H, "Half-carry flag should be cleared")
+        self.assertFalse(self.cpu.registers[REGISTER_F] & FLAG_N, "Subtraction flag should be cleared")
+        # Check that Zero flag (Z) remains unchanged
+        self.assertFalse(self.cpu.registers[REGISTER_F] & FLAG_Z, "Zero flag should remain unchanged")
+
+        # Test when Zero (Z) flag is initially set
+        self.cpu.registers[REGISTER_F] = 0xF0  # Set all flags
+        self.memory.write_byte(self.cpu.pc, opcode)
+        self.cpu.step()
+        # Carry flag (C) should still be set
+        self.assertTrue(self.cpu.registers[REGISTER_F] & FLAG_C, "Carry flag should be set")
+        # Half-carry (H) and subtraction (N) flags should be cleared
+        self.assertFalse(self.cpu.registers[REGISTER_F] & FLAG_H, "Half-carry flag should be cleared")
+        self.assertFalse(self.cpu.registers[REGISTER_F] & FLAG_N, "Subtraction flag should be cleared")
+        # Zero flag (Z) should remain set
+        self.assertTrue(self.cpu.registers[REGISTER_F] & FLAG_Z, "Zero flag should remain unchanged")
+
+    def test_ccf(self):
+        opcode = opcodes.CCF
+
+        # Case 1: Carry flag is set initially
+        self.cpu.registers[REGISTER_F] = FLAG_C  # Set the carry flag initially
+        self.memory.write_byte(self.cpu.pc, opcode)
+        self.cpu.step()
+        self.assertEqual(self.cpu.registers[REGISTER_F] & (FLAG_Z | FLAG_C | FLAG_H | FLAG_N), 0)  # No flags should be set
+
+        # Case 2: Carry flag is cleared initially
+        self.cpu.registers[REGISTER_F] = FLAG_Z | FLAG_H | FLAG_N  # Clear only the carry flag initially
+        self.memory.write_byte(self.cpu.pc, opcode)
+        self.cpu.step()
+        self.assertEqual(self.cpu.registers[REGISTER_F] & (FLAG_Z | FLAG_C | FLAG_H | FLAG_N), FLAG_Z|FLAG_C)  # Only Zero and Carry flags should be set
+
+        # Case 3: Check that the zero flag (if set) is unaffected
+        self.cpu.registers[REGISTER_F] = 0xF0  # Set all flags
+        self.memory.write_byte(self.cpu.pc, opcode)
+        self.cpu.step()
+        self.assertEqual(self.cpu.registers[REGISTER_F] & (FLAG_Z | FLAG_C | FLAG_H | FLAG_N), FLAG_Z)  # Only Zero flag should remain set
+
     def test_inc16_register_pairs(self):
         OPCODES_TO_ITERATE = {
             opcodes.INC_BC: "BC",
