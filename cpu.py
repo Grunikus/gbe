@@ -13,7 +13,8 @@ from opcodes import (
     OR_A_B, OR_A_C, OR_A_D, OR_A_E, OR_A_H, OR_A_L, OR_A__HL_, OR_A_A,
     CP_A_B, CP_A_C, CP_A_D, CP_A_E, CP_A_H, CP_A_L, CP_A__HL_, CP_A_A,
     ADD_A_IMM, ADC_A_IMM, SUB_A_IMM, SBC_A_IMM,
-    AND_A_IMM, XOR_A_IMM, OR_A_IMM, CP_A_IMM
+    AND_A_IMM, XOR_A_IMM, OR_A_IMM, CP_A_IMM,
+    ADD_SP_IMM
 )
 
 FLAG_Z = 0b10000000  # Zero Flag
@@ -90,7 +91,7 @@ class CPU:
                 self.INSTRUCTION_MAP[opcode] = lambda self, reg=register: operation(self, self.registers[reg], **kwargs)
         def _map_opcode_hl_imm_to_operation(opcode_hl, opcode_imm, operation, **kwargs):
             self.INSTRUCTION_MAP[opcode_hl] = lambda self: operation(self, self._read_byte_at_memory_hl(), **kwargs)
-            self.INSTRUCTION_MAP[opcode_imm] = lambda self: (operation(self, self.memory.read_byte(self.pc), **kwargs), setattr(self, 'pc', self.pc + 1))
+            self.INSTRUCTION_MAP[opcode_imm] = lambda self: (operation(self, self._read_from_memory_and_inc_pc(), **kwargs))
         # Define the opcode-register pairs and call add_instruction_map with the appropriate function and flags
         _map_opcode_inc_dec_16_pairs_to_operation( [(INC_BC, 'BC'), (INC_DE, 'DE'), (INC_HL, 'HL'), (INC_SP, 'sp')],
             lambda self, value: self._inc16(value) )
@@ -129,10 +130,15 @@ class CPU:
         _map_opcode_hl_imm_to_operation(XOR_A__HL_, XOR_A_IMM, lambda self, value: self._xor_a(value))
         _map_opcode_hl_imm_to_operation(OR_A__HL_, OR_A_IMM, lambda self, value: self._or_a(value))
         _map_opcode_hl_imm_to_operation(CP_A__HL_, CP_A_IMM, lambda self, value: self._sub_a(value, compare=True))
+        self.INSTRUCTION_MAP[ADD_SP_IMM] = lambda self: self._add_sp_imm()
+
+    def _read_from_memory_and_inc_pc(self):
+        value = self.memory.read_byte(self.pc)
+        self.pc += 1
+        return value
 
     def step(self):
-        opcode = self.memory.read_byte(self.pc)
-        self.pc += 1
+        opcode = self._read_from_memory_and_inc_pc()
         self.INSTRUCTION_MAP[opcode](self)
 
     def _read_byte_at_memory_hl(self):
@@ -350,3 +356,14 @@ class CPU:
         self.registers[REGISTER_F] = 0
         if self.registers[REGISTER_A] == 0:
             self.registers[REGISTER_F] |= FLAG_Z  # Set zero flag
+
+    def _add_sp_imm(self):
+        offset = self._read_from_memory_and_inc_pc()
+        offset_signed = offset if offset < 0x80 else offset - 0x100
+        sp_initial = self.sp
+        result = sp_initial + offset_signed
+        flag_h = FLAG_H if ((sp_initial & 0x0F) + (offset_signed & 0x0F)) > 0x0F else 0
+        flag_c = FLAG_C if result > 0xFFFF or result < 0 else 0
+
+        self.sp = result & 0xFFFF
+        self.registers[REGISTER_F] = flag_h | flag_c

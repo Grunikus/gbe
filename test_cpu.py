@@ -535,5 +535,23 @@ class TestCPU(unittest.TestCase):
             self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE, IMMEDIATE_VALUE)
             self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
+    def _set_sp_and_execute_add_sp_imm(self, sp_initial, offset, expected_sp, flag_h=False, flag_c=False):
+        opcode = opcodes.ADD_SP_IMM
+        self.cpu.sp = sp_initial
+        self.memory.write_byte(self.cpu.pc, opcode)
+        self.memory.write_byte(self.cpu.pc + 1, offset)
+        self.cpu.step()
+
+        self.assertEqual(self.cpu.sp, expected_sp, f"SP after ADD_SP_IMM with initial SP={sp_initial}, offset={offset:#04x}")
+        self.assertEqual(bool(self.cpu.registers[REGISTER_F] & FLAG_H), flag_h, "Half-carry flag mismatch")
+        self.assertEqual(bool(self.cpu.registers[REGISTER_F] & FLAG_C), flag_c, "Carry flag mismatch")
+
+    def test_add_sp_imm(self):
+        self._set_sp_and_execute_add_sp_imm(sp_initial=0x0000, offset=0x05, expected_sp=0x0005, flag_h=False, flag_c=False)
+        self._set_sp_and_execute_add_sp_imm(sp_initial=0xEFFF, offset=0x01, expected_sp=0xF000, flag_h=True,  flag_c=False)
+        self._set_sp_and_execute_add_sp_imm(sp_initial=0xFFFF, offset=0x10, expected_sp=0x000F, flag_h=False, flag_c=True )
+        self._set_sp_and_execute_add_sp_imm(sp_initial=0xFFFF, offset=0x01, expected_sp=0x0000, flag_h=True,  flag_c=True )
+        self._set_sp_and_execute_add_sp_imm(sp_initial=0x0010, offset=0xF0, expected_sp=0x0000, flag_h=False, flag_c=False)
+
 if __name__ == '__main__':
     unittest.main()
