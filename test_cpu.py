@@ -100,9 +100,9 @@ class TestCPU(unittest.TestCase):
         half_carry = ((operand1 & 0x0FFF) + (operand2 & 0x0FFF)) > 0x0FFF
         return return_value, self._register_f_from_flags(return_value==0, carry_out=carry_out, half_carry=half_carry, is_subtraction=False, modify_z=False)
 
-    def _set_register_a_and_flags_step_assert_value_a(self, opcode, value_a_input, value_a_output, flag_z=False, flag_n=False, flag_h=False, flag_c=False):
+    def _set_register_a_and_flags_step_assert_value_a(self, opcode, value_a_input, value_a_output, flag_z=False, flag_n=False, flag_h=False, flag_c=False, modify_z=True, modify_n=True, modify_h=True, modify_c=True):
         self.cpu.registers[REGISTER_A] = value_a_input & 0xFF
-        self.cpu.registers[REGISTER_F] = self._register_f_from_flags(zero=flag_z, is_subtraction=flag_n, half_carry=flag_h, carry_out=flag_c)
+        self.cpu.registers[REGISTER_F] = self._register_f_from_flags(zero=flag_z, is_subtraction=flag_n, half_carry=flag_h, carry_out=flag_c, modify_z=modify_z, modify_n=modify_n, modify_h=modify_h, modify_c=modify_c)
         self.memory.write_byte(self.cpu.pc, opcode)
         self.cpu.step()
         self.assertEqual(self.cpu.registers[REGISTER_A], value_a_output)
@@ -129,6 +129,20 @@ class TestCPU(unittest.TestCase):
         # Test SUB that produced carry
         self._set_register_a_and_flags_step_assert_value_a(opcode, 0xA0, 0x40, flag_n=True, flag_c=True)
         self.assertTrue(self.cpu.registers[REGISTER_F] & FLAG_C)  # Carry flag should remain set
+
+    def test_cpl(self):
+        opcode = opcodes.CPL
+        # N & H flags should be set, Z & C flags should be unchanged
+        flags_expected_status = (self.cpu.registers[REGISTER_F] & (FLAG_Z | FLAG_C)) | FLAG_N | FLAG_H
+
+        self._set_register_a_and_flags_step_assert_value_a(opcode, 0x00, 0xFF, modify_z=False, modify_n=False, modify_h=False, modify_c=False)
+        self.assertEqual(self.cpu.registers[REGISTER_F], flags_expected_status)
+
+        self._set_register_a_and_flags_step_assert_value_a(opcode, 0xFF, 0x00, modify_z=False, modify_n=False, modify_h=False, modify_c=False)
+        self.assertEqual(self.cpu.registers[REGISTER_F], flags_expected_status)
+
+        self._set_register_a_and_flags_step_assert_value_a(opcode, 0x5A, 0xA5, modify_z=False, modify_n=False, modify_h=False, modify_c=False)
+        self.assertEqual(self.cpu.registers[REGISTER_F], flags_expected_status)
 
     def test_inc16_register_pairs(self):
         OPCODES_TO_ITERATE = {
