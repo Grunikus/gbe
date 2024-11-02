@@ -583,7 +583,22 @@ class TestCPU(unittest.TestCase):
             self.cpu.step()
             self.assertEqual(self.cpu.registers[ getattr(cpu, f'REGISTER_{register}') ], imm_value, f"{opcode=}")
 
-    # TODO: indirect loads
+    def test_ld__hl__r8(self):
+        for register in ('A', 'B', 'C', 'D', 'E', 'H', 'L'):
+            opcode = getattr(opcodes, f'LD__HL__{register}')
+            reg_value = self._random_byte()
+            self.cpu.registers[getattr(cpu, f'REGISTER_{register}')] = reg_value
+            self.memory.write_byte(self.cpu.pc, opcode)
+            self.cpu.step()
+            self.assertEqual( self.memory.read_byte( (self.cpu.registers[REGISTER_H] << 8) | self.cpu.registers[REGISTER_L] ), reg_value, f"{opcode=}")
+
+    def test_ld__hl__imm(self):
+        opcode = opcodes.LD__HL__IMM
+        imm_value = self._random_byte()
+        self.memory.write_byte(self.cpu.pc, opcode)
+        self.memory.write_byte(self.cpu.pc + 1, imm_value)
+        self.cpu.step()
+        self.assertEqual( self.memory.read_byte( (self.cpu.registers[REGISTER_H] << 8) | self.cpu.registers[REGISTER_L] ), imm_value, f"{opcode=}")
 
 if __name__ == '__main__':
     unittest.main()

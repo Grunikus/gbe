@@ -121,6 +121,7 @@ LD__HL__D   = 0x72  # LD (HL), D
 LD__HL__E   = 0x73  # LD (HL), E
 LD__HL__H   = 0x74  # LD (HL), H
 LD__HL__L   = 0x75  # LD (HL), L
+LD__HL__A   = 0x77  # LD (HL), A
 LD_A_B      = 0x78  # LD A, B
 LD_A_C      = 0x79  # LD A, C
 LD_A_D      = 0x7A  # LD A, D

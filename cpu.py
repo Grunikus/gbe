@@ -10,8 +10,8 @@ from opcodes import (
     LD_E_B, LD_E_C, LD_E_D, LD_E_E, LD_E_H, LD_E_L, LD_E__HL_, LD_E_A,
     LD_H_B, LD_H_C, LD_H_D, LD_H_E, LD_H_H, LD_H_L, LD_H__HL_, LD_H_A,
     LD_L_B, LD_L_C, LD_L_D, LD_L_E, LD_L_H, LD_L_L, LD_L__HL_, LD_L_A,
-    LD_A_IMM, LD_B_IMM, LD_C_IMM, LD_D_IMM, LD_E_IMM, LD_H_IMM, LD_L_IMM, # LD__HL__IMM,
-    # LD__HL__B, LD__HL__C, LD__HL__D, LD__HL__E, LD__HL__H, LD__HL__L,
+    LD_A_IMM, LD_B_IMM, LD_C_IMM, LD_D_IMM, LD_E_IMM, LD_H_IMM, LD_L_IMM, LD__HL__IMM,
+    LD__HL__B, LD__HL__C, LD__HL__D, LD__HL__E, LD__HL__H, LD__HL__L, LD__HL__A,
     ADD_HL_BC, ADD_HL_DE, ADD_HL_HL, ADD_HL_SP,
     ADD_A_B, ADD_A_C, ADD_A_D, ADD_A_E, ADD_A_H, ADD_A_L, ADD_A__HL_, ADD_A_A,
     ADC_A_B, ADC_A_C, ADC_A_D, ADC_A_E, ADC_A_H, ADC_A_L, ADC_A__HL_, ADC_A_A,
@@ -130,6 +130,11 @@ class CPU:
                                                 (LD_L_B, REGISTER_L, REGISTER_B), (LD_L_C, REGISTER_L, REGISTER_C), (LD_L_D, REGISTER_L, REGISTER_D), (LD_L_E, REGISTER_L, REGISTER_E), (LD_L_H, REGISTER_L, REGISTER_H), (LD_L_L, REGISTER_L, REGISTER_L), (LD_L_A, REGISTER_L, REGISTER_A)
          ],
                             lambda self, register, value: self._ld(register, value))
+        _map_opcode_register_pairs_to_operation([(LD__HL__A, REGISTER_A),
+                                                 (LD__HL__B, REGISTER_B), (LD__HL__C, REGISTER_C),
+                                                 (LD__HL__D, REGISTER_D), (LD__HL__E, REGISTER_E),
+                                                 (LD__HL__H, REGISTER_H), (LD__HL__L, REGISTER_L) ],
+                            lambda self, value: self._ld__hl_(value))
         _map_opcode_register_pairs_to_operation([ (ADD_A_A, REGISTER_A), (ADD_A_B, REGISTER_B), (ADD_A_C, REGISTER_C), (ADD_A_D, REGISTER_D), (ADD_A_E, REGISTER_E), (ADD_A_H, REGISTER_H), (ADD_A_L, REGISTER_L) ],
                             lambda self, value: self._add_a(value))
         _map_opcode_register_pairs_to_operation( [ (ADC_A_A, REGISTER_A), (ADC_A_B, REGISTER_B), (ADC_A_C, REGISTER_C), (ADC_A_D, REGISTER_D), (ADC_A_E, REGISTER_E), (ADC_A_H, REGISTER_H), (ADC_A_L, REGISTER_L) ],
@@ -147,6 +152,7 @@ class CPU:
         _map_opcode_register_pairs_to_operation( [ (CP_A_A, REGISTER_A), (CP_A_B, REGISTER_B), (CP_A_C, REGISTER_C), (CP_A_D, REGISTER_D), (CP_A_E, REGISTER_E), (CP_A_H, REGISTER_H), (CP_A_L, REGISTER_L) ],
                             lambda self, value: self._sub_a(value, compare=True))
         # Define each set of operations with their HL and IMM opcodes
+        self.INSTRUCTION_MAP[LD__HL__IMM] = lambda self: (self._ld__hl_(self._read_from_memory_and_inc_pc()))
         _map_opcode_hl_imm_to_ld_reg([(LD_A__HL_, LD_A_IMM, REGISTER_A),
                                       (LD_B__HL_, LD_B_IMM, REGISTER_B), (LD_C__HL_, LD_C_IMM, REGISTER_C),
                                       (LD_D__HL_, LD_D_IMM, REGISTER_D), (LD_E__HL_, LD_E_IMM, REGISTER_E),
@@ -175,6 +181,10 @@ class CPU:
         address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
         memory_value = self.memory.read_byte(address)
         return memory_value
+
+    def _write_byte_at_memory_hl(self, byte):
+        address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
+        self.memory.write_byte(address, byte)
 
     def _daa(self):
         a = self.registers[REGISTER_A]
@@ -332,6 +342,9 @@ class CPU:
 
     def _ld(self, register_index, value_to_load):
         self.registers[register_index] = value_to_load
+
+    def _ld__hl_(self, value_to_load):
+        self._write_byte_at_memory_hl(value_to_load)
 
     def _add_a(self, operand_2, use_carry=False):
         carry = (self.registers[REGISTER_F] & FLAG_C) >> 4  if use_carry else 0
