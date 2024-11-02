@@ -3,6 +3,15 @@ from opcodes import (
     DAA, CPL, SCF, CCF,
     INC_BC, DEC_BC, INC_DE, DEC_DE, INC_HL, DEC_HL, INC_SP, DEC_SP,
     INC_B, DEC_B, INC_C, DEC_C, INC_D, DEC_D, INC_E, DEC_E, INC_H, DEC_H, INC_L, DEC_L, INC__HL_, DEC__HL_, INC_A, DEC_A,
+    LD_A_B, LD_A_C, LD_A_D, LD_A_E, LD_A_H, LD_A_L, LD_A__HL_, LD_A_A,
+    LD_B_B, LD_B_C, LD_B_D, LD_B_E, LD_B_H, LD_B_L, LD_B__HL_, LD_B_A,
+    LD_C_B, LD_C_C, LD_C_D, LD_C_E, LD_C_H, LD_C_L, LD_C__HL_, LD_C_A,
+    LD_D_B, LD_D_C, LD_D_D, LD_D_E, LD_D_H, LD_D_L, LD_D__HL_, LD_D_A,
+    LD_E_B, LD_E_C, LD_E_D, LD_E_E, LD_E_H, LD_E_L, LD_E__HL_, LD_E_A,
+    LD_H_B, LD_H_C, LD_H_D, LD_H_E, LD_H_H, LD_H_L, LD_H__HL_, LD_H_A,
+    LD_L_B, LD_L_C, LD_L_D, LD_L_E, LD_L_H, LD_L_L, LD_L__HL_, LD_L_A,
+    LD_A_IMM, LD_B_IMM, LD_C_IMM, LD_D_IMM, LD_E_IMM, LD_H_IMM, LD_L_IMM, # LD__HL__IMM,
+    # LD__HL__B, LD__HL__C, LD__HL__D, LD__HL__E, LD__HL__H, LD__HL__L,
     ADD_HL_BC, ADD_HL_DE, ADD_HL_HL, ADD_HL_SP,
     ADD_A_B, ADD_A_C, ADD_A_D, ADD_A_E, ADD_A_H, ADD_A_L, ADD_A__HL_, ADD_A_A,
     ADC_A_B, ADC_A_C, ADC_A_D, ADC_A_E, ADC_A_H, ADC_A_L, ADC_A__HL_, ADC_A_A,
@@ -86,9 +95,16 @@ class CPU:
         def _map_opcode_add_hl_register16_pairs_to_operation(opcode_register_groups, operation, **kwargs):
             for opcode, register_pair in opcode_register_groups:
                 self.INSTRUCTION_MAP[opcode] = lambda self, reg_pair=register_pair: operation(self, getattr(self, reg_pair), **kwargs)
+        def _map_opcode_register_trios_to_operation(opcode_register_trios, operation, **kwargs):
+            for opcode, register1, register2 in opcode_register_trios:
+                self.INSTRUCTION_MAP[opcode] = lambda self, reg1=register1, reg2=register2: operation(self, reg1, self.registers[reg2], **kwargs)
         def _map_opcode_register_pairs_to_operation(opcode_register_pairs, operation, **kwargs):
             for opcode, register in opcode_register_pairs:
                 self.INSTRUCTION_MAP[opcode] = lambda self, reg=register: operation(self, self.registers[reg], **kwargs)
+        def _map_opcode_hl_imm_to_ld_reg(opcode_hl_imm_register, operation, **kwargs):
+            for opcode_hl, opcode_imm, register in opcode_hl_imm_register:
+                self.INSTRUCTION_MAP[opcode_hl] = lambda self: operation(self, register, self._read_byte_at_memory_hl(), **kwargs)
+                self.INSTRUCTION_MAP[opcode_imm] = lambda self, reg=register: (operation(self, reg, self._read_from_memory_and_inc_pc(), **kwargs))
         def _map_opcode_hl_imm_to_operation(opcode_hl, opcode_imm, operation, **kwargs):
             self.INSTRUCTION_MAP[opcode_hl] = lambda self: operation(self, self._read_byte_at_memory_hl(), **kwargs)
             self.INSTRUCTION_MAP[opcode_imm] = lambda self: (operation(self, self._read_from_memory_and_inc_pc(), **kwargs))
@@ -105,6 +121,15 @@ class CPU:
         self.INSTRUCTION_MAP[DEC__HL_] = lambda self: self._dec__hl_()
         _map_opcode_add_hl_register16_pairs_to_operation( [(ADD_HL_BC, 'BC'), (ADD_HL_DE, 'DE'), (ADD_HL_HL, 'HL'), (ADD_HL_SP, 'sp') ],
             lambda self, value: self._add_hl_16(value))
+        _map_opcode_register_trios_to_operation([ (LD_A_B, REGISTER_A, REGISTER_B), (LD_A_C, REGISTER_A, REGISTER_C), (LD_A_D, REGISTER_A, REGISTER_D), (LD_A_E, REGISTER_A, REGISTER_E), (LD_A_H, REGISTER_A, REGISTER_H), (LD_A_L, REGISTER_A, REGISTER_L), (LD_A_A, REGISTER_A, REGISTER_A),
+                                                (LD_B_B, REGISTER_B, REGISTER_B), (LD_B_C, REGISTER_B, REGISTER_C), (LD_B_D, REGISTER_B, REGISTER_D), (LD_B_E, REGISTER_B, REGISTER_E), (LD_B_H, REGISTER_B, REGISTER_H), (LD_B_L, REGISTER_B, REGISTER_L), (LD_B_A, REGISTER_B, REGISTER_A),
+                                                (LD_C_B, REGISTER_C, REGISTER_B), (LD_C_C, REGISTER_C, REGISTER_C), (LD_C_D, REGISTER_C, REGISTER_D), (LD_C_E, REGISTER_C, REGISTER_E), (LD_C_H, REGISTER_C, REGISTER_H), (LD_C_L, REGISTER_C, REGISTER_L), (LD_C_A, REGISTER_C, REGISTER_A),
+                                                (LD_D_B, REGISTER_D, REGISTER_B), (LD_D_C, REGISTER_D, REGISTER_C), (LD_D_D, REGISTER_D, REGISTER_D), (LD_D_E, REGISTER_D, REGISTER_E), (LD_D_H, REGISTER_D, REGISTER_H), (LD_D_L, REGISTER_D, REGISTER_L), (LD_D_A, REGISTER_D, REGISTER_A),
+                                                (LD_E_B, REGISTER_E, REGISTER_B), (LD_E_C, REGISTER_E, REGISTER_C), (LD_E_D, REGISTER_E, REGISTER_D), (LD_E_E, REGISTER_E, REGISTER_E), (LD_E_H, REGISTER_E, REGISTER_H), (LD_E_L, REGISTER_E, REGISTER_L), (LD_E_A, REGISTER_E, REGISTER_A),
+                                                (LD_H_B, REGISTER_H, REGISTER_B), (LD_H_C, REGISTER_H, REGISTER_C), (LD_H_D, REGISTER_H, REGISTER_D), (LD_H_E, REGISTER_H, REGISTER_E), (LD_H_H, REGISTER_H, REGISTER_H), (LD_H_L, REGISTER_H, REGISTER_L), (LD_H_A, REGISTER_H, REGISTER_A),
+                                                (LD_L_B, REGISTER_L, REGISTER_B), (LD_L_C, REGISTER_L, REGISTER_C), (LD_L_D, REGISTER_L, REGISTER_D), (LD_L_E, REGISTER_L, REGISTER_E), (LD_L_H, REGISTER_L, REGISTER_H), (LD_L_L, REGISTER_L, REGISTER_L), (LD_L_A, REGISTER_L, REGISTER_A)
+         ],
+                            lambda self, register, value: self._ld(register, value))
         _map_opcode_register_pairs_to_operation([ (ADD_A_A, REGISTER_A), (ADD_A_B, REGISTER_B), (ADD_A_C, REGISTER_C), (ADD_A_D, REGISTER_D), (ADD_A_E, REGISTER_E), (ADD_A_H, REGISTER_H), (ADD_A_L, REGISTER_L) ],
                             lambda self, value: self._add_a(value))
         _map_opcode_register_pairs_to_operation( [ (ADC_A_A, REGISTER_A), (ADC_A_B, REGISTER_B), (ADC_A_C, REGISTER_C), (ADC_A_D, REGISTER_D), (ADC_A_E, REGISTER_E), (ADC_A_H, REGISTER_H), (ADC_A_L, REGISTER_L) ],
@@ -122,6 +147,11 @@ class CPU:
         _map_opcode_register_pairs_to_operation( [ (CP_A_A, REGISTER_A), (CP_A_B, REGISTER_B), (CP_A_C, REGISTER_C), (CP_A_D, REGISTER_D), (CP_A_E, REGISTER_E), (CP_A_H, REGISTER_H), (CP_A_L, REGISTER_L) ],
                             lambda self, value: self._sub_a(value, compare=True))
         # Define each set of operations with their HL and IMM opcodes
+        _map_opcode_hl_imm_to_ld_reg([(LD_A__HL_, LD_A_IMM, REGISTER_A),
+                                      (LD_B__HL_, LD_B_IMM, REGISTER_B), (LD_C__HL_, LD_C_IMM, REGISTER_C),
+                                      (LD_D__HL_, LD_D_IMM, REGISTER_D), (LD_E__HL_, LD_E_IMM, REGISTER_E),
+                                      (LD_H__HL_, LD_H_IMM, REGISTER_H), (LD_L__HL_, LD_L_IMM, REGISTER_L)],
+                                    lambda self, register, value: self._ld(register, value))
         _map_opcode_hl_imm_to_operation(ADD_A__HL_, ADD_A_IMM, lambda self, value: self._add_a(value))
         _map_opcode_hl_imm_to_operation(ADC_A__HL_, ADC_A_IMM, lambda self, value: self._add_a(value, use_carry=True))
         _map_opcode_hl_imm_to_operation(SUB_A__HL_, SUB_A_IMM, lambda self, value: self._sub_a(value))
@@ -299,6 +329,9 @@ class CPU:
             self.registers[REGISTER_F] |= FLAG_C
         else:
             self.registers[REGISTER_F] &= ~FLAG_C
+
+    def _ld(self, register_index, value_to_load):
+        self.registers[register_index] = value_to_load
 
     def _add_a(self, operand_2, use_carry=False):
         carry = (self.registers[REGISTER_F] & FLAG_C) >> 4  if use_carry else 0

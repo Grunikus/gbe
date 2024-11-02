@@ -1,4 +1,6 @@
+import random
 import unittest
+import cpu
 from cpu import CPU, FLAG_Z, FLAG_N, FLAG_H, FLAG_C, REGISTER_A, REGISTER_F, REGISTER_B, REGISTER_C, REGISTER_D, REGISTER_E, REGISTER_H, REGISTER_L
 from memory import Memory
 # Maybe we shouldn't import opcodes but hardcode them in the tests
@@ -18,6 +20,9 @@ class TestCPU(unittest.TestCase):
         self.cpu.registers[REGISTER_E] = 0x11  # SUB A, r: A = 0x21 - 0x11 = 0x10 (H = 1, Z = 0, C = 0)
         self.cpu.registers[REGISTER_H] = 0x06
         self.cpu.registers[REGISTER_L] = 0xFF  # ADD A, r: A = 0x01 + 0xFF = 0x00 (Z = 1, H = 1, C = 1)
+
+    def _random_byte(self):
+        return random.randint(0x00, 0xFF)
 
     def _step_and_assert_flags(self, opcode, expected_flags):
         self.memory.write_byte(self.cpu.pc, opcode)
@@ -552,6 +557,33 @@ class TestCPU(unittest.TestCase):
         self._set_sp_and_execute_add_sp_imm(sp_initial=0xFFFF, offset=0x10, expected_sp=0x000F, flag_h=False, flag_c=True )
         self._set_sp_and_execute_add_sp_imm(sp_initial=0xFFFF, offset=0x01, expected_sp=0x0000, flag_h=True,  flag_c=True )
         self._set_sp_and_execute_add_sp_imm(sp_initial=0x0010, offset=0xF0, expected_sp=0x0000, flag_h=False, flag_c=False)
+
+    def _execute_ld_instruction_and_assert_value(self, opcode, target_register, initial_value, expected_value):
+        self.cpu.registers[target_register] = initial_value
+        self.memory.write_byte(self.cpu.pc, opcode)
+        self.cpu.step()
+        self.assertEqual(self.cpu.registers[target_register], expected_value, f"{opcode=}")
+
+    def test_ld_r8_r8(self):
+        for register_1 in ('A', 'B', 'C', 'D', 'E', 'H', 'L'):
+            for register_2 in ('A', 'B', 'C', 'D', 'E', 'H', 'L'):
+                opcode = getattr(opcodes, f'LD_{register_1}_{register_2}')
+                register_to_check = getattr(cpu, f'REGISTER_{register_2}')
+                self._execute_ld_instruction_and_assert_value( opcode, getattr(cpu, f'REGISTER_{register_1}'),
+                    initial_value:= self._random_byte(),
+                    expected_value= initial_value if register_2 == register_1 else self.cpu.registers[register_to_check]
+                )
+
+    def test_ld_r8_imm(self):
+        for register in ('A', 'B', 'C', 'D', 'E', 'H', 'L'):
+            opcode = getattr(opcodes, f'LD_{register}_IMM')
+            imm_value = self._random_byte()
+            self.memory.write_byte(self.cpu.pc, opcode)
+            self.memory.write_byte(self.cpu.pc + 1, imm_value)
+            self.cpu.step()
+            self.assertEqual(self.cpu.registers[ getattr(cpu, f'REGISTER_{register}') ], imm_value, f"{opcode=}")
+
+    # TODO: indirect loads
 
 if __name__ == '__main__':
     unittest.main()
