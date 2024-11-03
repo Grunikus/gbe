@@ -257,7 +257,7 @@ class TestCPU(unittest.TestCase):
 
     def test_inc_non_register(self):
         opcode = opcodes.INC__HL_
-        INITIAL_CARRY_STATUS = 1
+        INITIAL_CARRY_STATUS = random.randint(0, 1)
         self._carry_update(INITIAL_CARRY_STATUS)
         OPERAND = 0xFF
         EXPECTED_RESULT, EXPECTED_FLAGS = self._inc(OPERAND)
@@ -267,6 +267,7 @@ class TestCPU(unittest.TestCase):
         self._step_and_assert_flags(opcode, EXPECTED_FLAGS)
         self.assertEqual(self.memory.read_byte((ADDR_HIGH << 8) | ADDR_LOW), EXPECTED_RESULT, f"{opcode=}")
 
+    # TODO: Review register base values for test coverage: Ensure Half Carry flag is set in any of the cases
     def test_dec_register(self):
         OPCODES_TO_ITERATE = {
             opcodes.DEC_B: REGISTER_B,
@@ -286,7 +287,7 @@ class TestCPU(unittest.TestCase):
 
     def test_dec_non_register(self):
         opcode = opcodes.DEC__HL_
-        INITIAL_CARRY_STATUS = 1
+        INITIAL_CARRY_STATUS = random.randint(0, 1)
         self._carry_update(INITIAL_CARRY_STATUS)
         OPERAND = 0xFF
         EXPECTED_RESULT, EXPECTED_FLAGS = self._dec(OPERAND)
@@ -332,7 +333,7 @@ class TestCPU(unittest.TestCase):
 
     def test_add_a_non_register(self):
         OPCODES_TO_ITERATE = { opcodes.ADD_A__HL_, opcodes.ADD_A_IMM }
-        INITIAL_CARRY_STATUS = 1
+        INITIAL_CARRY_STATUS = random.randint(0, 1)
         for opcode in OPCODES_TO_ITERATE:
             OPERAND1 = self._random_byte()
             OPERAND2 = self._random_byte()
@@ -353,7 +354,7 @@ class TestCPU(unittest.TestCase):
             opcodes.ADC_A_L: REGISTER_L,
             opcodes.ADC_A_A: REGISTER_A,
         }
-        INITIAL_CARRY_STATUS = 1
+        INITIAL_CARRY_STATUS = random.randint(0, 1)
         for opcode, register in OPCODES_TO_ITERATE.items():
             OPERAND1 = self._random_byte()
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
@@ -364,7 +365,7 @@ class TestCPU(unittest.TestCase):
 
     def test_adc_a_non_register(self):
         OPCODES_TO_ITERATE = { opcodes.ADC_A__HL_, opcodes.ADC_A_IMM }
-        INITIAL_CARRY_STATUS = 1
+        INITIAL_CARRY_STATUS = random.randint(0, 1)
         for opcode in OPCODES_TO_ITERATE:
             OPERAND1 = self._random_byte()
             OPERAND2 = self._random_byte()
@@ -396,7 +397,7 @@ class TestCPU(unittest.TestCase):
             opcodes.CP_A_A: REGISTER_A,
         }
         OPCODES_TO_ITERATE = CP_OPERANDS if compare else SUB_OPERANDS
-        INITIAL_CARRY_STATUS = 1
+        INITIAL_CARRY_STATUS = random.randint(0, 1)
         for opcode, register in OPCODES_TO_ITERATE.items():
             OPERAND1 = self._random_byte()
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
@@ -407,7 +408,7 @@ class TestCPU(unittest.TestCase):
 
     def test_sub_a_non_register(self, compare=False):
         OPCODES_TO_ITERATE = { opcodes.CP_A__HL_, opcodes.CP_A_IMM } if compare else { opcodes.SUB_A__HL_, opcodes.SUB_A_IMM }
-        INITIAL_CARRY_STATUS = 1
+        INITIAL_CARRY_STATUS = random.randint(0, 1)
         for opcode in OPCODES_TO_ITERATE:
             OPERAND1 = self._random_byte()
             OPERAND2 = self._random_byte()
@@ -434,7 +435,7 @@ class TestCPU(unittest.TestCase):
             opcodes.SBC_A_L: REGISTER_L,
             opcodes.SBC_A_A: REGISTER_A,
         }
-        INITIAL_CARRY_STATUS = 1
+        INITIAL_CARRY_STATUS = random.randint(0, 1)
         for opcode, register in OPCODES_TO_ITERATE.items():
             OPERAND1 = self._random_byte()
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
@@ -445,7 +446,7 @@ class TestCPU(unittest.TestCase):
 
     def test_sbc_a_non_register(self):
         OPCODES_TO_ITERATE = { opcodes.SBC_A__HL_, opcodes.SBC_A_IMM }
-        INITIAL_CARRY_STATUS = 1
+        INITIAL_CARRY_STATUS = random.randint(0, 1)
         for opcode in OPCODES_TO_ITERATE:
             OPERAND1 = self._random_byte()
             OPERAND2 = self._random_byte()
