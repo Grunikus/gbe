@@ -23,7 +23,9 @@ from opcodes import (
     CP_A_B, CP_A_C, CP_A_D, CP_A_E, CP_A_H, CP_A_L, CP_A__HL_, CP_A_A,
     ADD_A_IMM, ADC_A_IMM, SUB_A_IMM, SBC_A_IMM,
     AND_A_IMM, XOR_A_IMM, OR_A_IMM, CP_A_IMM,
-    ADD_SP_IMM
+    ADD_SP_IMM,
+    LDH__NN__A, LD__C__A, LD_A__NN_, LD_A__C_, LD__IMM16__A, LD_A__IMM16_,
+    LD__BC__A, LD_A__BC_, LD__DE__A, LD_A__DE_, LD_HL_INC_A, LD_A_HL_INC, LD_HL_DEC_A, LD_A_HL_DEC
 )
 
 FLAG_Z = 0b10000000  # Zero Flag
@@ -103,11 +105,11 @@ class CPU:
                 self.INSTRUCTION_MAP[opcode] = lambda self, reg=register: operation(self, self.registers[reg], **kwargs)
         def _map_opcode_hl_imm_to_ld_reg(opcode_hl_imm_register, operation, **kwargs):
             for opcode_hl, opcode_imm, register in opcode_hl_imm_register:
-                self.INSTRUCTION_MAP[opcode_hl] = lambda self: operation(self, register, self._read_byte_at_memory_hl(), **kwargs)
-                self.INSTRUCTION_MAP[opcode_imm] = lambda self, reg=register: (operation(self, reg, self._read_from_memory_and_inc_pc(), **kwargs))
+                self.INSTRUCTION_MAP[opcode_hl] = lambda self, reg=register: operation(self, reg, self.memory.read_byte( (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L] ), **kwargs)
+                self.INSTRUCTION_MAP[opcode_imm] = lambda self, reg=register: (operation(self, reg, self._read_byte_from__pc__and_inc_pc(), **kwargs))
         def _map_opcode_hl_imm_to_operation(opcode_hl, opcode_imm, operation, **kwargs):
-            self.INSTRUCTION_MAP[opcode_hl] = lambda self: operation(self, self._read_byte_at_memory_hl(), **kwargs)
-            self.INSTRUCTION_MAP[opcode_imm] = lambda self: (operation(self, self._read_from_memory_and_inc_pc(), **kwargs))
+            self.INSTRUCTION_MAP[opcode_hl] = lambda self: operation(self, self.memory.read_byte( (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L] ), **kwargs)
+            self.INSTRUCTION_MAP[opcode_imm] = lambda self: (operation(self, self._read_byte_from__pc__and_inc_pc(), **kwargs))
         # Define the opcode-register pairs and call add_instruction_map with the appropriate function and flags
         _map_opcode_inc_dec_16_pairs_to_operation( [(INC_BC, 'BC'), (INC_DE, 'DE'), (INC_HL, 'HL'), (INC_SP, 'sp')],
             lambda self, value: self._inc16(value) )
@@ -134,7 +136,7 @@ class CPU:
                                                  (LD__HL__B, REGISTER_B), (LD__HL__C, REGISTER_C),
                                                  (LD__HL__D, REGISTER_D), (LD__HL__E, REGISTER_E),
                                                  (LD__HL__H, REGISTER_H), (LD__HL__L, REGISTER_L) ],
-                            lambda self, value: self._ld__hl_(value))
+                            lambda self, value: self._ld__indirect_((self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L], value) )
         _map_opcode_register_pairs_to_operation([ (ADD_A_A, REGISTER_A), (ADD_A_B, REGISTER_B), (ADD_A_C, REGISTER_C), (ADD_A_D, REGISTER_D), (ADD_A_E, REGISTER_E), (ADD_A_H, REGISTER_H), (ADD_A_L, REGISTER_L) ],
                             lambda self, value: self._add_a(value))
         _map_opcode_register_pairs_to_operation( [ (ADC_A_A, REGISTER_A), (ADC_A_B, REGISTER_B), (ADC_A_C, REGISTER_C), (ADC_A_D, REGISTER_D), (ADC_A_E, REGISTER_E), (ADC_A_H, REGISTER_H), (ADC_A_L, REGISTER_L) ],
@@ -152,7 +154,7 @@ class CPU:
         _map_opcode_register_pairs_to_operation( [ (CP_A_A, REGISTER_A), (CP_A_B, REGISTER_B), (CP_A_C, REGISTER_C), (CP_A_D, REGISTER_D), (CP_A_E, REGISTER_E), (CP_A_H, REGISTER_H), (CP_A_L, REGISTER_L) ],
                             lambda self, value: self._sub_a(value, compare=True))
         # Define each set of operations with their HL and IMM opcodes
-        self.INSTRUCTION_MAP[LD__HL__IMM] = lambda self: (self._ld__hl_(self._read_from_memory_and_inc_pc()))
+        self.INSTRUCTION_MAP[LD__HL__IMM] = lambda self: ( self._ld__indirect_((self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L], self._read_byte_from__pc__and_inc_pc()) )
         _map_opcode_hl_imm_to_ld_reg([(LD_A__HL_, LD_A_IMM, REGISTER_A),
                                       (LD_B__HL_, LD_B_IMM, REGISTER_B), (LD_C__HL_, LD_C_IMM, REGISTER_C),
                                       (LD_D__HL_, LD_D_IMM, REGISTER_D), (LD_E__HL_, LD_E_IMM, REGISTER_E),
@@ -167,24 +169,29 @@ class CPU:
         _map_opcode_hl_imm_to_operation(OR_A__HL_, OR_A_IMM, lambda self, value: self._or_a(value))
         _map_opcode_hl_imm_to_operation(CP_A__HL_, CP_A_IMM, lambda self, value: self._sub_a(value, compare=True))
         self.INSTRUCTION_MAP[ADD_SP_IMM] = lambda self: self._add_sp_imm()
+        self.INSTRUCTION_MAP[LD__BC__A]    = lambda self: self._ld__indirect_( (self.registers[REGISTER_B] << 8) | self.registers[REGISTER_C] , self.registers[REGISTER_A] )
+        self.INSTRUCTION_MAP[LD__DE__A]    = lambda self: self._ld__indirect_( (self.registers[REGISTER_D] << 8) | self.registers[REGISTER_E] , self.registers[REGISTER_A] )
+        self.INSTRUCTION_MAP[LD_HL_INC_A]  = lambda self: self._ld__indirect_( self._hl(+1) , self.registers[REGISTER_A] )
+        self.INSTRUCTION_MAP[LD_HL_DEC_A]  = lambda self: self._ld__indirect_( self._hl(-1) , self.registers[REGISTER_A] )
+        self.INSTRUCTION_MAP[LDH__NN__A]   = lambda self: self._ld__indirect_( 0xFF00 | self._read_byte_from__pc__and_inc_pc() , self.registers[REGISTER_A] )
+        self.INSTRUCTION_MAP[LD__C__A]     = lambda self: self._ld__indirect_( 0xFF00 | self.registers[REGISTER_C] , self.registers[REGISTER_A] )
+        self.INSTRUCTION_MAP[LD__IMM16__A] = lambda self: self._ld__indirect_( (self._read_byte_from__pc__and_inc_pc() << 8) | self._read_byte_from__pc__and_inc_pc() , self.registers[REGISTER_A] )
+        self.INSTRUCTION_MAP[LD_A__BC_]    = lambda self: self._ld(REGISTER_A, self.memory.read_byte( (self.registers[REGISTER_B] << 8) | self.registers[REGISTER_C] ))
+        self.INSTRUCTION_MAP[LD_A__DE_]    = lambda self: self._ld(REGISTER_A, self.memory.read_byte( (self.registers[REGISTER_D] << 8) | self.registers[REGISTER_E] ))
+        self.INSTRUCTION_MAP[LD_A_HL_INC]  = lambda self: self._ld(REGISTER_A, self.memory.read_byte( self._hl(+1) ))
+        self.INSTRUCTION_MAP[LD_A_HL_DEC]  = lambda self: self._ld(REGISTER_A, self.memory.read_byte( self._hl(-1) ))
+        self.INSTRUCTION_MAP[LD_A__NN_]    = lambda self: self._ld(REGISTER_A, self.memory.read_byte( 0xFF00 | self._read_byte_from__pc__and_inc_pc() ))
+        self.INSTRUCTION_MAP[LD_A__C_]     = lambda self: self._ld(REGISTER_A, self.memory.read_byte( 0xFF00 | self.registers[REGISTER_C] ))
+        self.INSTRUCTION_MAP[LD_A__IMM16_] = lambda self: self._ld(REGISTER_A, self.memory.read_byte( (self._read_byte_from__pc__and_inc_pc() << 8) | self._read_byte_from__pc__and_inc_pc() ))
 
-    def _read_from_memory_and_inc_pc(self):
+    def _read_byte_from__pc__and_inc_pc(self):
         value = self.memory.read_byte(self.pc)
         self.pc += 1
         return value
 
     def step(self):
-        opcode = self._read_from_memory_and_inc_pc()
+        opcode = self._read_byte_from__pc__and_inc_pc()
         self.INSTRUCTION_MAP[opcode](self)
-
-    def _read_byte_at_memory_hl(self):
-        address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
-        memory_value = self.memory.read_byte(address)
-        return memory_value
-
-    def _write_byte_at_memory_hl(self, byte):
-        address = (self.registers[REGISTER_H] << 8) | self.registers[REGISTER_L]
-        self.memory.write_byte(address, byte)
 
     def _daa(self):
         a = self.registers[REGISTER_A]
@@ -340,11 +347,14 @@ class CPU:
         else:
             self.registers[REGISTER_F] &= ~FLAG_C
 
+    def _hl(self, operand):
+        self.HL = (self.HL + operand) & 0xFFFF
+
     def _ld(self, register_index, value_to_load):
         self.registers[register_index] = value_to_load
 
-    def _ld__hl_(self, value_to_load):
-        self._write_byte_at_memory_hl(value_to_load)
+    def _ld__indirect_(self, address, value_to_load):
+        self.memory.write_byte(address, value_to_load)
 
     def _add_a(self, operand_2, use_carry=False):
         carry = (self.registers[REGISTER_F] & FLAG_C) >> 4  if use_carry else 0
@@ -404,7 +414,7 @@ class CPU:
             self.registers[REGISTER_F] |= FLAG_Z  # Set zero flag
 
     def _add_sp_imm(self):
-        offset = self._read_from_memory_and_inc_pc()
+        offset = self._read_byte_from__pc__and_inc_pc()
         offset_signed = offset if offset < 0x80 else offset - 0x100
         sp_initial = self.sp
         result = sp_initial + offset_signed
