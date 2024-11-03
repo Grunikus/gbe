@@ -323,8 +323,8 @@ class TestCPU(unittest.TestCase):
             opcodes.ADD_A_L: REGISTER_L,
             opcodes.ADD_A_A: REGISTER_A,
         }
-        OPERAND1 = 0x01
         for opcode, register in OPCODES_TO_ITERATE.items():
+            OPERAND1 = self._random_byte()
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT, EXPECTED_FLAGS = self._add(OPERAND1, OPERAND2, carry_in= 0)
 
@@ -333,11 +333,11 @@ class TestCPU(unittest.TestCase):
     def test_add_a_non_register(self):
         OPCODES_TO_ITERATE = { opcodes.ADD_A__HL_, opcodes.ADD_A_IMM }
         INITIAL_CARRY_STATUS = 1
-        OPERAND1 = 0x01
-        OPERAND2 = 0x02
-        EXPECTED_RESULT, EXPECTED_FLAGS = self._add(OPERAND1, OPERAND2, carry_in= 0)
-        ADDR_HIGH, ADDR_LOW = 0x00, 0x10
         for opcode in OPCODES_TO_ITERATE:
+            OPERAND1 = self._random_byte()
+            OPERAND2 = self._random_byte()
+            EXPECTED_RESULT, EXPECTED_FLAGS = self._add(OPERAND1, OPERAND2, carry_in= 0)
+            ADDR_HIGH, ADDR_LOW = self._random_byte(), self._random_byte()
             MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND2) if opcode in IMMEDIATE_OPCODES else (OPERAND2, 0)
             self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE, IMMEDIATE_VALUE)
             self._carry_update(INITIAL_CARRY_STATUS)
@@ -354,8 +354,8 @@ class TestCPU(unittest.TestCase):
             opcodes.ADC_A_A: REGISTER_A,
         }
         INITIAL_CARRY_STATUS = 1
-        OPERAND1 = 0x01
         for opcode, register in OPCODES_TO_ITERATE.items():
+            OPERAND1 = self._random_byte()
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT, EXPECTED_FLAGS = self._add(OPERAND1, OPERAND2, carry_in= INITIAL_CARRY_STATUS)
 
@@ -365,11 +365,11 @@ class TestCPU(unittest.TestCase):
     def test_adc_a_non_register(self):
         OPCODES_TO_ITERATE = { opcodes.ADC_A__HL_, opcodes.ADC_A_IMM }
         INITIAL_CARRY_STATUS = 1
-        OPERAND1 = 0x01
-        OPERAND2 = 0x02
-        EXPECTED_RESULT, EXPECTED_FLAGS = self._add(OPERAND1, OPERAND2, carry_in= INITIAL_CARRY_STATUS)
-        ADDR_HIGH, ADDR_LOW = 0x00, 0x10
         for opcode in OPCODES_TO_ITERATE:
+            OPERAND1 = self._random_byte()
+            OPERAND2 = self._random_byte()
+            EXPECTED_RESULT, EXPECTED_FLAGS = self._add(OPERAND1, OPERAND2, carry_in= INITIAL_CARRY_STATUS)
+            ADDR_HIGH, ADDR_LOW = self._random_byte(), self._random_byte()
             MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND2) if opcode in IMMEDIATE_OPCODES else (OPERAND2, 0)
             self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE, IMMEDIATE_VALUE)
             self._carry_update(INITIAL_CARRY_STATUS)
@@ -396,9 +396,9 @@ class TestCPU(unittest.TestCase):
             opcodes.CP_A_A: REGISTER_A,
         }
         OPCODES_TO_ITERATE = CP_OPERANDS if compare else SUB_OPERANDS
-        OPERAND1 = 0x01
         INITIAL_CARRY_STATUS = 1
         for opcode, register in OPCODES_TO_ITERATE.items():
+            OPERAND1 = self._random_byte()
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT, EXPECTED_FLAGS = self._sub(OPERAND1, OPERAND2, carry_in=0)
 
@@ -408,11 +408,11 @@ class TestCPU(unittest.TestCase):
     def test_sub_a_non_register(self, compare=False):
         OPCODES_TO_ITERATE = { opcodes.CP_A__HL_, opcodes.CP_A_IMM } if compare else { opcodes.SUB_A__HL_, opcodes.SUB_A_IMM }
         INITIAL_CARRY_STATUS = 1
-        OPERAND1 = 0x03
-        OPERAND2 = 0x02
-        EXPECTED_RESULT, EXPECTED_FLAGS = self._sub(OPERAND1, OPERAND2, carry_in=0)
-        ADDR_HIGH, ADDR_LOW = 0x00, 0x10
         for opcode in OPCODES_TO_ITERATE:
+            OPERAND1 = self._random_byte()
+            OPERAND2 = self._random_byte()
+            EXPECTED_RESULT, EXPECTED_FLAGS = self._sub(OPERAND1, OPERAND2, carry_in=0)
+            ADDR_HIGH, ADDR_LOW = self._random_byte(), self._random_byte()
             MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND2) if opcode in IMMEDIATE_OPCODES else (OPERAND2, 0)
             self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE, IMMEDIATE_VALUE)
             self._carry_update(INITIAL_CARRY_STATUS)
@@ -435,8 +435,8 @@ class TestCPU(unittest.TestCase):
             opcodes.SBC_A_A: REGISTER_A,
         }
         INITIAL_CARRY_STATUS = 1
-        OPERAND1 = 0x01
         for opcode, register in OPCODES_TO_ITERATE.items():
+            OPERAND1 = self._random_byte()
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT, EXPECTED_FLAGS = self._sub(OPERAND1, OPERAND2, carry_in=INITIAL_CARRY_STATUS)
 
@@ -446,11 +446,11 @@ class TestCPU(unittest.TestCase):
     def test_sbc_a_non_register(self):
         OPCODES_TO_ITERATE = { opcodes.SBC_A__HL_, opcodes.SBC_A_IMM }
         INITIAL_CARRY_STATUS = 1
-        OPERAND1 = 0x03
-        OPERAND2 = 0x02
-        EXPECTED_RESULT, EXPECTED_FLAGS = self._sub(OPERAND1, OPERAND2, carry_in= INITIAL_CARRY_STATUS)
-        ADDR_HIGH, ADDR_LOW = 0x00, 0x10
         for opcode in OPCODES_TO_ITERATE:
+            OPERAND1 = self._random_byte()
+            OPERAND2 = self._random_byte()
+            EXPECTED_RESULT, EXPECTED_FLAGS = self._sub(OPERAND1, OPERAND2, carry_in= INITIAL_CARRY_STATUS)
+            ADDR_HIGH, ADDR_LOW = self._random_byte(), self._random_byte()
             MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND2) if opcode in IMMEDIATE_OPCODES else (OPERAND2, 0)
             self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE, IMMEDIATE_VALUE)
             self._carry_update(INITIAL_CARRY_STATUS)
@@ -466,8 +466,8 @@ class TestCPU(unittest.TestCase):
             opcodes.AND_A_H: REGISTER_H,
             opcodes.AND_A_L: REGISTER_L,
         }
-        OPERAND1 = 0x0F
         for opcode, register in OPCODES_TO_ITERATE.items():
+            OPERAND1 = self._random_byte()
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT = OPERAND1 & OPERAND2
             EXPECTED_FLAGS = (FLAG_Z if EXPECTED_RESULT == 0 else 0) | FLAG_H  # Half carry is always set for AND operations
@@ -483,8 +483,8 @@ class TestCPU(unittest.TestCase):
             opcodes.XOR_A_H: REGISTER_H,
             opcodes.XOR_A_L: REGISTER_L,
         }
-        OPERAND1 = 0x0F
         for opcode, register in OPERANDS.items():
+            OPERAND1 = self._random_byte()
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT = OPERAND1 ^ OPERAND2
             EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0
@@ -492,28 +492,28 @@ class TestCPU(unittest.TestCase):
 
     def test_and_a_hl(self):
         OPCODES_TO_ITERATE = { opcodes.AND_A__HL_, opcodes.AND_A_IMM }
-        OPERAND1, OPERAND2 = 0x0F, 0x03
-        EXPECTED_RESULT = OPERAND1 & OPERAND2
-        EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0 | FLAG_H  # Half carry is always set for AND operations
-        ADDR_HIGH, ADDR_LOW = 0x00, 0x10
 
         for opcode in OPCODES_TO_ITERATE:
+            OPERAND1, OPERAND2 = self._random_byte(), self._random_byte()
+            EXPECTED_RESULT = OPERAND1 & OPERAND2
+            EXPECTED_FLAGS = (FLAG_Z if EXPECTED_RESULT == 0 else 0) | FLAG_H  # Half carry is always set for AND operations
+            ADDR_HIGH, ADDR_LOW = self._random_byte(), self._random_byte()
             MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND2) if opcode in IMMEDIATE_OPCODES else (OPERAND2, 0)
             self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE, IMMEDIATE_VALUE)
             self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
     def test_xor_a_hl(self):
         OPCODES_TO_ITERATE = { opcodes.XOR_A__HL_, opcodes.XOR_A_IMM }
-        OPERAND1, OPERAND2 = 0x0F, 0x03
-        EXPECTED_RESULT = OPERAND1 ^ OPERAND2
-        EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0
-        ADDR_HIGH, ADDR_LOW = 0x00, 0x10
         for opcode in OPCODES_TO_ITERATE:
+            OPERAND1, OPERAND2 = self._random_byte(), self._random_byte()
+            EXPECTED_RESULT = OPERAND1 ^ OPERAND2
+            EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0
+            ADDR_HIGH, ADDR_LOW = self._random_byte(), self._random_byte()
             MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND2) if opcode in IMMEDIATE_OPCODES else (OPERAND2, 0)
             self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE, IMMEDIATE_VALUE)
             self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
 
-    def test_or_a_register(self, OPERAND1 = 0x0F):
+    def test_or_a_register(self):
         OPCODES_TO_ITERATE = {
             opcodes.OR_A_B: REGISTER_B,
             opcodes.OR_A_C: REGISTER_C,
@@ -524,6 +524,7 @@ class TestCPU(unittest.TestCase):
             opcodes.OR_A_A: REGISTER_A,
         }
         for opcode, register in OPCODES_TO_ITERATE.items():
+            OPERAND1 = self._random_byte()
             OPERAND2 = self.cpu.registers[register] if register!=REGISTER_A else OPERAND1
             EXPECTED_RESULT = OPERAND1 | OPERAND2
             EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0
@@ -532,11 +533,11 @@ class TestCPU(unittest.TestCase):
 
     def test_or_a_hl(self):
         OPCODES_TO_ITERATE = { opcodes.OR_A__HL_, opcodes.OR_A_IMM }
-        OPERAND1, OPERAND2 = 0x0F, 0x03
-        EXPECTED_RESULT = OPERAND1 | OPERAND2
-        EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0
-        ADDR_HIGH, ADDR_LOW = 0x00, 0x10
         for opcode in OPCODES_TO_ITERATE:
+            OPERAND1, OPERAND2 = self._random_byte(), self._random_byte()
+            EXPECTED_RESULT = OPERAND1 | OPERAND2
+            EXPECTED_FLAGS = FLAG_Z if EXPECTED_RESULT == 0 else 0
+            ADDR_HIGH, ADDR_LOW = self._random_byte(), self._random_byte()
             MEMORY_VALUE, IMMEDIATE_VALUE = (0, OPERAND2) if opcode in IMMEDIATE_OPCODES else (OPERAND2, 0)
             self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE, IMMEDIATE_VALUE)
             self._set_register_a_step_assert(opcode, OPERAND1, EXPECTED_RESULT, EXPECTED_FLAGS)
@@ -578,9 +579,9 @@ class TestCPU(unittest.TestCase):
     def test_ld_r8__hl__and_imm(self):
         for register in ('A', 'B', 'C', 'D', 'E', 'H', 'L'):
             OPCODES_TO_ITERATE = ( getattr(opcodes, f'LD_{register}__HL_'), getattr(opcodes, f'LD_{register}_IMM') )
-            test_value = self._random_byte()
-            ADDR_HIGH, ADDR_LOW = 0x00, 0x10
             for opcode in OPCODES_TO_ITERATE:
+                test_value = self._random_byte()
+                ADDR_HIGH, ADDR_LOW = self._random_byte(), self._random_byte()
                 MEMORY_VALUE, IMMEDIATE_VALUE = (0, test_value) if opcode in IMMEDIATE_OPCODES else (test_value, 0)
                 self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE, IMMEDIATE_VALUE)
 
