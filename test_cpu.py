@@ -6,7 +6,8 @@ from memory import Memory
 # Maybe we shouldn't import opcodes but hardcode them in the tests
 import opcodes
 
-IMMEDIATE_OPCODES = ( opcodes.ADD_A_IMM, opcodes.ADC_A_IMM, opcodes.SUB_A_IMM, opcodes.SBC_A_IMM, opcodes.AND_A_IMM, opcodes.XOR_A_IMM, opcodes.OR_A_IMM,  opcodes.CP_A_IMM, )
+IMMEDIATE_OPCODES = ( opcodes.ADD_A_IMM, opcodes.ADC_A_IMM, opcodes.SUB_A_IMM, opcodes.SBC_A_IMM, opcodes.AND_A_IMM, opcodes.XOR_A_IMM, opcodes.OR_A_IMM,  opcodes.CP_A_IMM, 
+                      opcodes.LD_A_IMM,  opcodes.LD_B_IMM,  opcodes.LD_C_IMM,  opcodes.LD_D_IMM,  opcodes.LD_E_IMM,  opcodes.LD_H_IMM,  opcodes.LD_L_IMM, )
 
 class TestCPU(unittest.TestCase):
     def setUp(self):
@@ -34,11 +35,11 @@ class TestCPU(unittest.TestCase):
         self._step_and_assert_flags(opcode, expected_flags)
         self.assertEqual(self.cpu.registers[REGISTER_A], expected_result, f"{opcode=}")
 
-    def _initialize_hl_and_memory(self, H, L, hl_value, immediate_value):
+    def _initialize_hl_and_memory(self, address_byte_hi, address_byte_lo, memory_at__hl__value, immediate_value):
         """Helper function to set registers H, L, and memory at the HL address."""
-        self.cpu.registers[REGISTER_H] = H
-        self.cpu.registers[REGISTER_L] = L
-        self.memory.write_byte((H << 8) | L, hl_value)
+        self.cpu.registers[REGISTER_H] = address_byte_hi
+        self.cpu.registers[REGISTER_L] = address_byte_lo
+        self.memory.write_byte((address_byte_hi << 8) | address_byte_lo, memory_at__hl__value)
         self.memory.write_byte(self.cpu.pc+1, immediate_value)
 
     def _register_f_from_flags(self, zero=None, is_subtraction=None, half_carry=None, carry_out=None, modify_z=True, modify_n=True, modify_h=True, modify_c=True):
@@ -574,14 +575,18 @@ class TestCPU(unittest.TestCase):
                     expected_value= initial_value if register_2 == register_1 else self.cpu.registers[register_to_check]
                 )
 
-    def test_ld_r8_imm(self):
+    def test_ld_r8__hl__and_imm(self):
         for register in ('A', 'B', 'C', 'D', 'E', 'H', 'L'):
-            opcode = getattr(opcodes, f'LD_{register}_IMM')
-            imm_value = self._random_byte()
-            self.memory.write_byte(self.cpu.pc, opcode)
-            self.memory.write_byte(self.cpu.pc + 1, imm_value)
-            self.cpu.step()
-            self.assertEqual(self.cpu.registers[ getattr(cpu, f'REGISTER_{register}') ], imm_value, f"{opcode=}")
+            OPCODES_TO_ITERATE = ( getattr(opcodes, f'LD_{register}__HL_'), getattr(opcodes, f'LD_{register}_IMM') )
+            test_value = self._random_byte()
+            ADDR_HIGH, ADDR_LOW = 0x00, 0x10
+            for opcode in OPCODES_TO_ITERATE:
+                MEMORY_VALUE, IMMEDIATE_VALUE = (0, test_value) if opcode in IMMEDIATE_OPCODES else (test_value, 0)
+                self._initialize_hl_and_memory(ADDR_HIGH, ADDR_LOW, MEMORY_VALUE, IMMEDIATE_VALUE)
+
+                self.memory.write_byte(self.cpu.pc, opcode)
+                self.cpu.step()
+                self.assertEqual(self.cpu.registers[ getattr(cpu, f'REGISTER_{register}') ], test_value, f"{opcode=}")
 
     def test_ld__hl__r8(self):
         for register in ('A', 'B', 'C', 'D', 'E', 'H', 'L'):
