@@ -605,5 +605,50 @@ class TestCPU(unittest.TestCase):
         self.cpu.step()
         self.assertEqual( self.memory.read_byte( (self.cpu.registers[REGISTER_H] << 8) | self.cpu.registers[REGISTER_L] ), imm_value, f"{opcode=}")
 
+    def test_ld__indirect__a(self):
+        for indirect in ('NN', 'C', 'IMM16', 'BC', 'DE', 'HL_INC', 'HL_DEC'):
+            opcode = getattr(opcodes, f'LD__{indirect}__A')
+            previous_hl = (self.cpu.registers[REGISTER_H] << 8) | self.cpu.registers[REGISTER_L]
+            imm_value = self.cpu.registers[REGISTER_A]
+
+            match indirect:
+                case 'NN':
+                    addr_hi = 0xFF
+                    addr_lo = self._random_byte()
+                    self.memory.write_byte(self.cpu.pc+1, addr_lo)
+                case 'C':
+                    addr_hi = 0xFF
+                    addr_lo = self.cpu.registers[REGISTER_C]
+                case 'IMM16':
+                    addr_hi = self._random_byte()
+                    addr_lo = self._random_byte()
+                    self.memory.write_byte(self.cpu.pc+1, addr_hi)
+                    self.memory.write_byte(self.cpu.pc+2, addr_lo)
+                case 'BC':
+                    addr_hi = self.cpu.registers[REGISTER_B]
+                    addr_lo = self.cpu.registers[REGISTER_C]
+                case 'DE':
+                    addr_hi = self.cpu.registers[REGISTER_D]
+                    addr_lo = self.cpu.registers[REGISTER_E]
+                case _:
+                    addr_hi = self.cpu.registers[REGISTER_H]
+                    addr_lo = self.cpu.registers[REGISTER_L]
+            self.memory.write_byte(self.cpu.pc, opcode)
+            self.cpu.step()
+            self.assertEqual( self.memory.read_byte( (addr_hi << 8) | addr_lo ), imm_value, f"{opcode=}")
+            if indirect in ('HL_INC', 'HL_DEC'):
+                self.assertEqual( self.cpu.HL, (previous_hl + (1 if indirect=='HL_INC' else -1) ) & 0xFFFF , f"{opcode=}")
+
+    # TODO: Test
+    # LD_A__NN_,
+    # LD_A__C_,
+    # LD_A__IMM16_
+    # LD_A__BC_,
+    # LD_A__DE_,
+    # LD_A_HL_INC,
+    # LD_A_HL_DEC
+    # Probably can refactor test_ld__hl__xx for the indirect load destinations (easy)
+    # And test_ld_r8__hl__ for the indirect load sources (not easy, maybe not worth)
+
 if __name__ == '__main__':
     unittest.main()
