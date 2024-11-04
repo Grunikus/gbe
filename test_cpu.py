@@ -678,5 +678,19 @@ class TestCPU(unittest.TestCase):
             if indirect in ('HL_INC', 'HL_DEC'):
                 self.assertEqual( self.cpu.HL, (previous_hl + (1 if indirect=='HL_INC' else -1) ) & 0xFFFF , f"{opcode=}")
 
+    def test_ld_r16_imm16(self):
+        for register_16 in ('BC', 'DE', 'HL', 'SP'):
+            opcode = getattr(opcodes, f'LD_{register_16}_IMM16')
+            imm_value_hi, imm_value_lo = self._random_byte(), self._random_byte()
+            previous_value = self.cpu.sp if register_16 == 'SP' else getattr(self.cpu, register_16)
+            next_value = previous_value + ( (imm_value_hi << 8) | imm_value_lo )
+            self.memory.write_byte(self.cpu.pc+1, imm_value_lo)
+            self.memory.write_byte(self.cpu.pc+2, imm_value_hi)
+
+            self.memory.write_byte(self.cpu.pc, opcode)
+            self.cpu.step()
+
+            self.assertEqual( self.cpu.sp if register_16 == 'SP' else getattr(self.cpu, register_16), next_value, f"{opcode=}")
+
 if __name__ == '__main__':
     unittest.main()
