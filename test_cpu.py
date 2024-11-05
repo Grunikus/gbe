@@ -682,15 +682,13 @@ class TestCPU(unittest.TestCase):
         for register_16 in ('BC', 'DE', 'HL', 'SP'):
             opcode = getattr(opcodes, f'LD_{register_16}_IMM16')
             imm_value_hi, imm_value_lo = self._random_byte(), self._random_byte()
-            previous_value = self.cpu.sp if register_16 == 'SP' else getattr(self.cpu, register_16)
-            next_value = previous_value + ( (imm_value_hi << 8) | imm_value_lo )
+            imm_value_16 = (imm_value_hi << 8) | imm_value_lo
             self.memory.write_byte(self.cpu.pc+1, imm_value_lo)
             self.memory.write_byte(self.cpu.pc+2, imm_value_hi)
 
             self.memory.write_byte(self.cpu.pc, opcode)
             self.cpu.step()
-
-            self.assertEqual( self.cpu.sp if register_16 == 'SP' else getattr(self.cpu, register_16), next_value, f"{opcode=}")
+            self.assertEqual( self.cpu.sp if register_16 == 'SP' else getattr(self.cpu, register_16), imm_value_16, f"{opcode=}")
 
 if __name__ == '__main__':
     unittest.main()

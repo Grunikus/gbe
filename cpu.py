@@ -3,7 +3,7 @@ from opcodes import (
     DAA, CPL, SCF, CCF,
     INC_BC, DEC_BC, INC_DE, DEC_DE, INC_HL, DEC_HL, INC_SP, DEC_SP,
     INC_B, DEC_B, INC_C, DEC_C, INC_D, DEC_D, INC_E, DEC_E, INC_H, DEC_H, INC_L, DEC_L, INC__HL_, DEC__HL_, INC_A, DEC_A,
-    # LD_BC_IMM16, LD_DE_IMM16, LD_HL_IMM16, LD_SP_IMM16,
+    LD_BC_IMM16, LD_DE_IMM16, LD_HL_IMM16, LD_SP_IMM16,
     LD_A_B, LD_A_C, LD_A_D, LD_A_E, LD_A_H, LD_A_L, LD_A__HL_, LD_A_A,
     LD_B_B, LD_B_C, LD_B_D, LD_B_E, LD_B_H, LD_B_L, LD_B__HL_, LD_B_A,
     LD_C_B, LD_C_C, LD_C_D, LD_C_E, LD_C_H, LD_C_L, LD_C__HL_, LD_C_A,
@@ -184,6 +184,12 @@ class CPU:
         self.INSTRUCTION_MAP[LD_A__NN_]    = lambda self: self._ld(REGISTER_A, self.memory.read_byte( 0xFF00 | self._read_byte_from__pc__and_inc_pc() ))
         self.INSTRUCTION_MAP[LD_A__C_]     = lambda self: self._ld(REGISTER_A, self.memory.read_byte( 0xFF00 | self.registers[REGISTER_C] ))
         self.INSTRUCTION_MAP[LD_A__IMM16_] = lambda self: self._ld(REGISTER_A, self.memory.read_byte( (self._read_byte_from__pc__and_inc_pc() << 8) | self._read_byte_from__pc__and_inc_pc() ))
+        def _map_opcode_ld_register16_pairs_to_operation(opcode_register_groups, operation, **kwargs):
+            for opcode, register_pair in opcode_register_groups:
+                self.INSTRUCTION_MAP[opcode] = lambda self, reg16=register_pair: operation(self, reg16, **kwargs)
+        _map_opcode_ld_register16_pairs_to_operation( [(LD_BC_IMM16, 'BC'), (LD_DE_IMM16, 'DE'), (LD_HL_IMM16, 'HL'), (LD_SP_IMM16, 'sp') ],
+            lambda self, register16: self._ld_r16(register16, self._read_byte_from__pc__and_inc_pc() | (self._read_byte_from__pc__and_inc_pc() << 8) )
+        )
 
     def _read_byte_from__pc__and_inc_pc(self):
         value = self.memory.read_byte(self.pc)
@@ -355,6 +361,9 @@ class CPU:
 
     def _ld(self, register_index, value_to_load):
         self.registers[register_index] = value_to_load
+
+    def _ld_r16(self, register_name, value_to_load):
+        setattr(self, register_name, value_to_load)
 
     def _ld__indirect_(self, address, value_to_load):
         self.memory.write_byte(address, value_to_load)
