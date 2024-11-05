@@ -702,5 +702,12 @@ class TestCPU(unittest.TestCase):
         self.assertEqual( self.memory.read_byte( (addr_hi << 8) | addr_lo ), self.cpu.sp & 0x00FF, f"{opcode=}")
         self.assertEqual( self.memory.read_byte( (addr_hi << 8) | addr_lo + 1), self.cpu.sp >> 8, f"{opcode=}")
 
+    def test_ld_sp_hl(self):
+        opcode = opcodes.LD_SP_HL
+
+        self.memory.write_byte(self.cpu.pc, opcode)
+        self.cpu.step()
+        self.assertEqual( self.cpu.sp, self.cpu.HL, f"{opcode=}")
+
 if __name__ == '__main__':
     unittest.main()
