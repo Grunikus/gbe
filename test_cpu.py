@@ -690,5 +690,17 @@ class TestCPU(unittest.TestCase):
             self.cpu.step()
             self.assertEqual( self.cpu.sp if register_16 == 'SP' else getattr(self.cpu, register_16), imm_value_16, f"{opcode=}")
 
+    def test_ld_indirect_sp(self):
+        opcode = opcodes.LD__NN__SP
+        addr_hi = self._random_byte()
+        addr_lo = self._random_byte()
+        self.memory.write_byte(self.cpu.pc+1, addr_hi)
+        self.memory.write_byte(self.cpu.pc+2, addr_lo)
+        self.memory.write_byte(self.cpu.pc, opcode)
+        self.cpu.step()
+
+        self.assertEqual( self.memory.read_byte( (addr_hi << 8) | addr_lo ), self.cpu.sp & 0x00FF, f"{opcode=}")
+        self.assertEqual( self.memory.read_byte( (addr_hi << 8) | addr_lo + 1), self.cpu.sp >> 8, f"{opcode=}")
+
 if __name__ == '__main__':
     unittest.main()

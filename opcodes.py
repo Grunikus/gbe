@@ -3,7 +3,6 @@ Explanations found at: https://meganesu.github.io/generate-gb-opcodes/"""
 """
 NOP          = 0x00  # No operation
 RLCA         = 0x07  # RLCA
-LD_NN_SP    = 0x08  # LD (nn), SP
 RRCA         = 0x0F  # RRCA
 STOP         = 0x10  # STOP
 RLA          = 0x17  # RLA
@@ -21,6 +20,7 @@ INC_BC      = 0x03  # INC BC
 INC_B       = 0x04  # INC B
 DEC_B       = 0x05  # DEC B
 LD_B_IMM    = 0x06  # LD B, imm
+LD__NN__SP  = 0x08  # LD (nn), SP
 ADD_HL_BC   = 0x09  # ADD HL, BC
 LD_A__BC_   = 0x0A  # LD A, (BC)
 DEC_BC      = 0x0B  # DEC BC
