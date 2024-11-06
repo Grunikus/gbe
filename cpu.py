@@ -25,7 +25,7 @@ from opcodes import (
     CP_A_B, CP_A_C, CP_A_D, CP_A_E, CP_A_H, CP_A_L, CP_A__HL_, CP_A_A,
     ADD_A_IMM, ADC_A_IMM, SUB_A_IMM, SBC_A_IMM,
     AND_A_IMM, XOR_A_IMM, OR_A_IMM, CP_A_IMM,
-    ADD_SP_IMM,
+    ADD_SP_IMM, LD_HL_S8,
     LD__NN__A, LD__C__A, LD__IMM16__A, LD_A__NN_, LD_A__C_, LD_A__IMM16_,
     LD__BC__A, LD_A__BC_, LD__DE__A, LD_A__DE_, LD__HL_INC__A, LD_A__HL_INC_, LD__HL_DEC__A, LD_A__HL_DEC_
 )
@@ -178,6 +178,7 @@ class CPU:
         )
         self.INSTRUCTION_MAP[LD_SP_HL]     = lambda self: self._ld_r16('sp', self.HL )
         self.INSTRUCTION_MAP[ADD_SP_IMM]   = lambda self: self._add_sp_imm()
+        self.INSTRUCTION_MAP[LD_HL_S8]     = lambda self: self._ld_hl_s8()
         self.INSTRUCTION_MAP[LD__BC__A]    = lambda self: self._ld__indirect_( (self.registers[REGISTER_B] << 8) | self.registers[REGISTER_C] , self.registers[REGISTER_A] )
         self.INSTRUCTION_MAP[LD__DE__A]    = lambda self: self._ld__indirect_( (self.registers[REGISTER_D] << 8) | self.registers[REGISTER_E] , self.registers[REGISTER_A] )
         self.INSTRUCTION_MAP[LD__HL_INC__A]= lambda self: self._ld__indirect_( self._hl(+1) , self.registers[REGISTER_A] )
@@ -432,13 +433,27 @@ class CPU:
         if self.registers[REGISTER_A] == 0:
             self.registers[REGISTER_F] |= FLAG_Z  # Set zero flag
 
+    def _signed_byte(self, offset):
+        return offset if offset < 0x80 else offset - 0x100
+
     def _add_sp_imm(self):
         offset = self._read_byte_from__pc__and_inc_pc()
-        offset_signed = offset if offset < 0x80 else offset - 0x100
+        offset_signed = self._signed_byte(offset)
         sp_initial = self.sp
         result = sp_initial + offset_signed
         flag_h = FLAG_H if ((sp_initial & 0x0F) + (offset_signed & 0x0F)) > 0x0F else 0
         flag_c = FLAG_C if result > 0xFFFF or result < 0 else 0
 
         self.sp = result & 0xFFFF
+        self.registers[REGISTER_F] = flag_h | flag_c
+
+    def _ld_hl_s8(self):
+        offset = self._read_byte_from__pc__and_inc_pc()
+        offset_signed = self._signed_byte(offset)
+        sp_initial = self.sp
+        result = sp_initial + offset_signed
+        flag_h = FLAG_H if ((sp_initial & 0x0F) + (offset_signed & 0x0F)) > 0x0F else 0
+        flag_c = FLAG_C if result > 0xFFFF or result < 0 else 0
+
+        self.HL = result & 0xFFFF
         self.registers[REGISTER_F] = flag_h | flag_c
