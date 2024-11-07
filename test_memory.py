@@ -9,7 +9,7 @@ class TestMemory(unittest.TestCase):
     def test_initial_memory_state(self):
         # Test that all memory locations are initialized to 0x00
         for address in range(MEMORY_SIZE):
-            self.assertEqual(self.memory.read_byte(address), 0x00)
+            self.assertEqual(self.memory.read_byte(address), 0x00, f"{address=}")
 
     def test_write_and_read_byte(self):
         # Write a byte and read it back to check the value
