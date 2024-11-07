@@ -1,5 +1,7 @@
+from dataclasses import dataclass
 from memory import Memory
 from opcodes import (
+    NOP,
     DAA, CPL, SCF, CCF,
     INC_BC, DEC_BC, INC_DE, DEC_DE, INC_HL, DEC_HL, INC_SP, DEC_SP,
     INC_B, DEC_B, INC_C, DEC_C, INC_D, DEC_D, INC_E, DEC_E, INC_H, DEC_H, INC_L, DEC_L, INC__HL_, DEC__HL_, INC_A, DEC_A,
@@ -47,13 +49,17 @@ REGISTER_E = 5
 REGISTER_H = 6
 REGISTER_L = 7
 
+@dataclass
 class CPU:
-    def __init__(self, memory: Memory):
-        self.memory = memory
-        # Registers A, F, B, C, D, E, H, L
-        self.registers = [0x00] * 8
-        self.pc = START_PC
-        self.sp = START_SP
+    memory: Memory
+    registers = [0x00] * 8
+    pc = START_PC
+    sp = START_SP
+    INSTRUCTION_MAP = {
+        NOP : lambda _: _
+    }
+
+    def __post_init__(self):
         self._fill_instruction_map()
 
     # Properties for register pairs (e.g., BC, DE, HL)
@@ -85,7 +91,6 @@ class CPU:
         self.registers[REGISTER_L] = value16 & 0xFF
 
     def _fill_instruction_map(self):
-        self.INSTRUCTION_MAP = {}
         self.INSTRUCTION_MAP[DAA] = lambda self: self._daa()
         self.INSTRUCTION_MAP[CPL] = lambda self: self._cpl()
         self.INSTRUCTION_MAP[SCF] = lambda self: self._scf()

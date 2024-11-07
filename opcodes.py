@@ -1,7 +1,6 @@
 """Opcode constants from: https://izik1.github.io/gbops/index.html
 Explanations found at: https://meganesu.github.io/generate-gb-opcodes/"""
 """
-NOP          = 0x00  # No operation
 RLCA         = 0x07  # RLCA
 RRCA         = 0x0F  # RRCA
 STOP         = 0x10  # STOP
@@ -14,6 +13,7 @@ JR_C_IMM    = 0x30  # JR C, imm
 JR_NC_IMM   = 0x38  # JR NC, imm
 HALT        = 0x76  # HALT
 """
+NOP         = 0x00  # No operation
 LD_BC_IMM16 = 0x01  # LD BC, nn
 LD__BC__A   = 0x02  # LD (BC), A
 INC_BC      = 0x03  # INC BC

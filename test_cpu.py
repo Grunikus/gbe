@@ -113,6 +113,18 @@ class TestCPU(unittest.TestCase):
         self.cpu.step()
         self.assertEqual(self.cpu.registers[REGISTER_A], value_a_output)
 
+    def test_nop(self):
+        opcode = opcodes.NOP
+        previous_cpu = CPU(self.cpu)
+
+        self.memory.write_byte(self.cpu.pc, opcode)
+        self.cpu.step()
+        for i in range(8):
+            self.assertEqual(self.cpu.registers[i], previous_cpu.registers[i])
+        self.assertEqual(self.cpu.sp, previous_cpu.sp)
+        self.assertEqual(self.cpu.pc, previous_cpu.pc + 1)
+        # self.assertEqual(self.cpu.memory, previous_cpu.memory)
+
     def test_daa(self):
         opcode = opcodes.DAA
         # Test after ADD without any flags set
