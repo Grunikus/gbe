@@ -1,12 +1,8 @@
 """Opcode constants from: https://izik1.github.io/gbops/index.html
 Explanations found at: https://meganesu.github.io/generate-gb-opcodes/"""
 """
-RLCA         = 0x07  # RLCA
-RRCA         = 0x0F  # RRCA
 STOP         = 0x10  # STOP
-RLA          = 0x17  # RLA
 JR_IMM      = 0x18  # JR imm
-RRA          = 0x1F  # RRA
 JR_Z_IMM    = 0x20  # JR Z, imm
 JR_NZ_IMM   = 0x28  # JR NZ, imm
 JR_C_IMM    = 0x30  # JR C, imm
@@ -20,6 +16,7 @@ INC_BC      = 0x03  # INC BC
 INC_B       = 0x04  # INC B
 DEC_B       = 0x05  # DEC B
 LD_B_IMM    = 0x06  # LD B, imm
+RLCA        = 0x07  # RLCA
 LD__IMM16__SP = 0x08  # LD (nn), SP
 ADD_HL_BC   = 0x09  # ADD HL, BC
 LD_A__BC_   = 0x0A  # LD A, (BC)
@@ -27,18 +24,21 @@ DEC_BC      = 0x0B  # DEC BC
 INC_C       = 0x0C  # INC C
 DEC_C       = 0x0D  # DEC C
 LD_C_IMM    = 0x0E  # LD C, imm
+RRCA        = 0x0F  # RRCA
 LD_DE_IMM16 = 0x11  # LD DE, nn
 LD__DE__A   = 0x12  # LD (DE), A
 INC_DE      = 0x13  # INC DE
 INC_D       = 0x14  # INC D
 DEC_D       = 0x15  # DEC D
 LD_D_IMM    = 0x16  # LD D, imm
+RLA         = 0x17  # RLA
 ADD_HL_DE   = 0x19  # ADD HL, DE
 LD_A__DE_   = 0x1A  # LD A, (DE)
 DEC_DE      = 0x1B  # DEC DE
 INC_E       = 0x1C  # INC E
 DEC_E       = 0x1D  # DEC E
 LD_E_IMM    = 0x1E  # LD E, imm
+RRA         = 0x1F  # RRA
 LD_HL_IMM16 = 0x21  # LD HL, nn
 LD__HL_INC__A = 0x22  # LD (HL+), A
 INC_HL      = 0x23  # INC HL

@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from memory import Memory
 from opcodes import (
     NOP,
+    RLCA, RRCA, RLA, RRA,
     DAA, CPL, SCF, CCF,
     INC_BC, DEC_BC, INC_DE, DEC_DE, INC_HL, DEC_HL, INC_SP, DEC_SP,
     INC_B, DEC_B, INC_C, DEC_C, INC_D, DEC_D, INC_E, DEC_E, INC_H, DEC_H, INC_L, DEC_L, INC__HL_, DEC__HL_, INC_A, DEC_A,
@@ -91,10 +92,14 @@ class CPU:
         self.registers[REGISTER_L] = value16 & 0xFF
 
     def _fill_instruction_map(self):
-        self.INSTRUCTION_MAP[DAA] = lambda self: self._daa()
-        self.INSTRUCTION_MAP[CPL] = lambda self: self._cpl()
-        self.INSTRUCTION_MAP[SCF] = lambda self: self._scf()
-        self.INSTRUCTION_MAP[CCF] = lambda self: self._ccf()
+        self.INSTRUCTION_MAP[RLCA] = lambda self: self._rotate_a()
+        self.INSTRUCTION_MAP[RRCA] = lambda self: self._rotate_a(left=False)
+        self.INSTRUCTION_MAP[RLA]  = lambda self: self._rotate_a(carry=False)
+        self.INSTRUCTION_MAP[RRA]  = lambda self: self._rotate_a(left=False, carry=False)
+        self.INSTRUCTION_MAP[DAA]  = lambda self: self._daa()
+        self.INSTRUCTION_MAP[CPL]  = lambda self: self._cpl()
+        self.INSTRUCTION_MAP[SCF]  = lambda self: self._scf()
+        self.INSTRUCTION_MAP[CCF]  = lambda self: self._ccf()
         def _map_inc_dec_opcode_register_pairs_to_operation(opcode_register_groups, operation, **kwargs):
             for opcode, register in opcode_register_groups:
                 self.INSTRUCTION_MAP[opcode] = lambda self, reg=register: operation(self, reg, **kwargs)
@@ -208,6 +213,32 @@ class CPU:
     def step(self):
         opcode = self._read_byte_from__pc__and_inc_pc()
         self.INSTRUCTION_MAP[opcode](self)
+
+    def _rotate_a(self, left=True, carry=True):
+
+        def _rl(previous_register_a:int, use_carry=False, previous_c=0):
+            result = previous_register_a << 1
+            output_carry = previous_register_a & 0b1000_0000
+            if ((use_carry and output_carry)
+             or (not use_carry and previous_c)
+            ):
+                result |= 0b0000_0001
+
+            return result, output_carry
+
+        def _rr(previous_register_a:int, use_carry=False, previous_c=0):
+            result = previous_register_a >> 1
+            output_carry = previous_register_a & 0b0000_0001
+            if ((use_carry and output_carry)
+             or (not use_carry and previous_c)
+            ):
+                result |= 0b1000_0000
+
+            return result, output_carry
+
+        new_a, new_carry = (_rl if left else _rr) ( self.registers[REGISTER_A] , carry, self.registers[REGISTER_F]&FLAG_C)
+        self.registers[REGISTER_F] = FLAG_C if new_carry else 0
+        self.registers[REGISTER_A] = new_a & 0xFF
 
     def _daa(self):
         a = self.registers[REGISTER_A]
