@@ -751,5 +751,26 @@ class TestCPU(unittest.TestCase):
                     self.assertEqual(self.cpu.registers[REGISTER_A], expected_a)
                     self.assertEqual(self.cpu.registers[REGISTER_F], expected_flags)
 
+    def test_jr_imm(self):
+        for opcode in (opcodes.JR_IMM, opcodes.JR_Z_IMM, opcodes.JR_NZ_IMM, opcodes.JR_C_IMM, opcodes.JR_NC_IMM):
+            jr_if_true = opcode in (opcodes.JR_Z_IMM, opcodes.JR_C_IMM)
+            comparison_flag = FLAG_Z if opcode in (opcodes.JR_Z_IMM, opcodes.JR_NZ_IMM) else FLAG_C
+            if opcode == opcodes.JR_IMM:
+                expect_jump = True
+            for flags in range(0, 0b1111):
+                initial_flags = flags << 4
+                if opcode != opcodes.JR_IMM:
+                    expect_jump = jr_if_true if (initial_flags&comparison_flag) else not jr_if_true
+                for offset in range(-128, 0, 127):
+                    initial_pc = self.cpu.pc
+                    expected_pc = (initial_pc + 2 + offset) & 0xFFFF if expect_jump else initial_pc + 2
+
+                    self.cpu.registers[REGISTER_F] = initial_flags
+                    self.memory.write_byte(self.cpu.pc, opcode)
+                    self.memory.write_byte(self.cpu.pc + 1, offset)
+                    self.cpu.step()
+                    self.assertEqual(self.cpu.registers[REGISTER_F], initial_flags, f"{opcode=}")
+                    self.assertEqual(self.cpu.pc, expected_pc, f"{opcode=}")
+
 if __name__ == '__main__':
     unittest.main()
