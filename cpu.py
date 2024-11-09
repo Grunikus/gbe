@@ -223,7 +223,7 @@ class CPU:
 
     def _read_byte_from__pc__and_inc_pc(self):
         value = self.memory.read_byte(self.pc)
-        self.pc += 1
+        self.pc += 1 & 0xFFFF
         return value
 
     def step(self):
