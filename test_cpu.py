@@ -732,7 +732,7 @@ class TestCPU(unittest.TestCase):
 
     def test_r_a(self):
         for opcode in (opcodes.RLCA, opcodes.RLA, opcodes.RRCA, opcodes.RRA):
-            for flags in (0, 0b1111):
+            for flags in range(0, 0b1111):
                 reg_f_initial = flags << 4
                 for byte in range(0xFF):
                     flags_mask = 0b1000_0000 if opcode in (opcodes.RLCA, opcodes.RLA) else 1
