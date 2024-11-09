@@ -2,11 +2,6 @@
 Explanations found at: https://meganesu.github.io/generate-gb-opcodes/"""
 """
 STOP         = 0x10  # STOP
-JR_IMM      = 0x18  # JR imm
-JR_Z_IMM    = 0x20  # JR Z, imm
-JR_NZ_IMM   = 0x28  # JR NZ, imm
-JR_C_IMM    = 0x30  # JR C, imm
-JR_NC_IMM   = 0x38  # JR NC, imm
 HALT        = 0x76  # HALT
 """
 NOP         = 0x00  # No operation
@@ -32,7 +27,9 @@ INC_D       = 0x14  # INC D
 DEC_D       = 0x15  # DEC D
 LD_D_IMM    = 0x16  # LD D, imm
 RLA         = 0x17  # RLA
+JR_IMM      = 0x18  # JR imm
 ADD_HL_DE   = 0x19  # ADD HL, DE
+JR_Z_IMM    = 0x20  # JR Z, imm
 LD_A__DE_   = 0x1A  # LD A, (DE)
 DEC_DE      = 0x1B  # DEC DE
 INC_E       = 0x1C  # INC E
@@ -46,6 +43,7 @@ INC_H       = 0x24  # INC H
 DEC_H       = 0x25  # DEC H
 LD_H_IMM    = 0x26  # LD H, imm
 DAA         = 0x27  # DAA
+JR_NZ_IMM   = 0x28  # JR NZ, imm
 ADD_HL_HL   = 0x29  # ADD HL, HL
 LD_A__HL_INC_ = 0x2A  # LD A, (HL+)
 DEC_HL      = 0x2B  # DEC HL
@@ -53,6 +51,7 @@ INC_L       = 0x2C  # INC L
 DEC_L       = 0x2D  # DEC L
 LD_L_IMM    = 0x2E  # LD L, imm
 CPL         = 0x2F  # CPL
+JR_C_IMM    = 0x30  # JR C, imm
 LD_SP_IMM16 = 0x31  # LD SP, nn
 LD__HL_DEC__A = 0x32  # LD (HL-), A
 INC_SP      = 0x33  # INC SP
@@ -60,6 +59,7 @@ INC__HL_    = 0x34  # INC (HL)
 DEC__HL_    = 0x35  # DEC (HL)
 LD__HL__IMM = 0x36  # LD (HL), imm
 SCF         = 0x37  # SCF
+JR_NC_IMM   = 0x38  # JR NC, imm
 ADD_HL_SP   = 0x39  # ADD HL, SP
 LD_A__HL_DEC_ = 0x3A  # LD A, (HL-)
 DEC_SP      = 0x3B  # DEC SP

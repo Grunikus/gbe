@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from memory import Memory
 from opcodes import (
     NOP,
+    JR_IMM, JR_Z_IMM, JR_NZ_IMM, JR_C_IMM, JR_NC_IMM,
     RLCA, RRCA, RLA, RRA,
     DAA, CPL, SCF, CCF,
     INC_BC, DEC_BC, INC_DE, DEC_DE, INC_HL, DEC_HL, INC_SP, DEC_SP,
@@ -92,6 +93,11 @@ class CPU:
         self.registers[REGISTER_L] = value16 & 0xFF
 
     def _fill_instruction_map(self):
+        self.INSTRUCTION_MAP[JR_IMM]    = lambda self: self._jr( self._read_byte_from__pc__and_inc_pc()                         )
+        self.INSTRUCTION_MAP[JR_Z_IMM]  = lambda self: self._jr( self._read_byte_from__pc__and_inc_pc()           , zero = True )
+        self.INSTRUCTION_MAP[JR_NZ_IMM] = lambda self: self._jr( self._read_byte_from__pc__and_inc_pc(), _not=True, zero = True )
+        self.INSTRUCTION_MAP[JR_C_IMM]  = lambda self: self._jr( self._read_byte_from__pc__and_inc_pc()           , carry= True )
+        self.INSTRUCTION_MAP[JR_NC_IMM] = lambda self: self._jr( self._read_byte_from__pc__and_inc_pc(), _not=True, carry= True )
         self.INSTRUCTION_MAP[RLCA] = lambda self: self._rotate_a()
         self.INSTRUCTION_MAP[RRCA] = lambda self: self._rotate_a(left=False)
         self.INSTRUCTION_MAP[RLA]  = lambda self: self._rotate_a(carry=False)
@@ -213,6 +219,24 @@ class CPU:
     def step(self):
         opcode = self._read_byte_from__pc__and_inc_pc()
         self.INSTRUCTION_MAP[opcode](self)
+
+    def _jr(self, byte, _not=False, zero=False, carry=False ):
+        if( (
+                not zero and not carry
+            ) or (
+                zero and (
+                    ( not _not and (self.registers[REGISTER_F]&FLAG_Z) )
+                    or
+                    ( _not and not (self.registers[REGISTER_F]&FLAG_Z) )
+                )
+            ) or (
+                carry and (
+                    ( not _not and (self.registers[REGISTER_F]&FLAG_C) )
+                    or
+                    ( _not and not (self.registers[REGISTER_F]&FLAG_C) )
+                )
+            ) ):
+            self.pc = (self.pc + byte) & 0xFFFF
 
     def _rotate_a(self, left=True, carry=True):
 
