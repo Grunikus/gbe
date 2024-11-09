@@ -32,6 +32,7 @@ from opcodes import (
     ADD_SP_IMM, LD_HL_S8,
     LD__NN__A, LD__C__A, LD__IMM16__A, LD_A__NN_, LD_A__C_, LD_A__IMM16_,
     LD__BC__A, LD_A__BC_, LD__DE__A, LD_A__DE_, LD__HL_INC__A, LD_A__HL_INC_, LD__HL_DEC__A, LD_A__HL_DEC_
+    , POP_BC, POP_DE, POP_HL, POP_AF
     , PUSH_BC, PUSH_DE, PUSH_HL, PUSH_AF
 )
 
@@ -194,6 +195,10 @@ class CPU:
             lambda self, register16: self._ld_r16(register16, self._read_byte_from__pc__and_inc_pc() | (self._read_byte_from__pc__and_inc_pc() << 8) )
         )
         self.INSTRUCTION_MAP[LD_SP_HL]     = lambda self: self._ld_r16('sp', self.HL )
+        self.INSTRUCTION_MAP[POP_BC]       = lambda self: self._pop_r16( REGISTER_B, REGISTER_C )
+        self.INSTRUCTION_MAP[POP_DE]       = lambda self: self._pop_r16( REGISTER_D, REGISTER_E )
+        self.INSTRUCTION_MAP[POP_HL]       = lambda self: self._pop_r16( REGISTER_H, REGISTER_L )
+        self.INSTRUCTION_MAP[POP_AF]       = lambda self: self._pop_r16( REGISTER_A, REGISTER_F )
         self.INSTRUCTION_MAP[PUSH_BC]      = lambda self: self._push_r16( REGISTER_B, REGISTER_C )
         self.INSTRUCTION_MAP[PUSH_DE]      = lambda self: self._push_r16( REGISTER_D, REGISTER_E )
         self.INSTRUCTION_MAP[PUSH_HL]      = lambda self: self._push_r16( REGISTER_H, REGISTER_L )
@@ -523,8 +528,14 @@ class CPU:
         self.HL = result & 0xFFFF
         self.registers[REGISTER_F] = flag_h | flag_c
 
+    def _pop_r16(self, reg_h, reg_l ):
+        self.registers[reg_l] = self.memory.read_byte( self.sp )
+        self.sp = (self.sp + 1) & 0xFFFF
+        self.registers[reg_h] = self.memory.read_byte( self.sp )
+        self.sp = (self.sp + 1) & 0xFFFF
+
     def _push_r16(self, reg_h, reg_l ):
-        self.sp -= 1
+        self.sp = (self.sp - 1) & 0xFFFF
         self.memory.write_byte( self.sp, self.registers[reg_h] )
-        self.sp -= 1
+        self.sp = (self.sp - 1) & 0xFFFF
         self.memory.write_byte( self.sp, self.registers[reg_l] )
