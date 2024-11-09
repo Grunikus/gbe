@@ -732,19 +732,20 @@ class TestCPU(unittest.TestCase):
 
     def test_r_a(self):
         for opcode in (opcodes.RLCA, opcodes.RLA, opcodes.RRCA, opcodes.RRA):
-            for register_f_initial in (0, FLAG_C):
+            for flags in (0, 0b1111):
+                reg_f_initial = flags << 4
                 for byte in range(0xFF):
                     flags_mask = 0b1000_0000 if opcode in (opcodes.RLCA, opcodes.RLA) else 1
                     expected_flags = ( FLAG_C if byte & flags_mask else 0 )
-                    if (opcode==opcodes.RLCA and expected_flags) or (opcode==opcodes.RLA and register_f_initial):
+                    if (opcode==opcodes.RLCA and expected_flags) or (opcode==opcodes.RLA and (reg_f_initial&FLAG_C)):
                         register_mask = 1
-                    elif (opcode==opcodes.RRCA and expected_flags) or (opcode==opcodes.RRA and register_f_initial):
+                    elif (opcode==opcodes.RRCA and expected_flags) or (opcode==opcodes.RRA and (reg_f_initial&FLAG_C)):
                         register_mask = 0b1000_0000
                     else:
                         register_mask = 0
                     expected_a = ( (byte << 1 & 0xFF) if opcode in (opcodes.RLCA, opcodes.RLA) else (byte >> 1) ) | register_mask
                     self.cpu.registers[REGISTER_A] = byte
-                    self.cpu.registers[REGISTER_F] = register_f_initial
+                    self.cpu.registers[REGISTER_F] = reg_f_initial
                     self.memory.write_byte(self.cpu.pc, opcode)
                     self.cpu.step()
                     self.assertEqual(self.cpu.registers[REGISTER_A], expected_a)
