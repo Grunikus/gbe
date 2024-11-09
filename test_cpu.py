@@ -789,9 +789,9 @@ class TestCPU(unittest.TestCase):
             self.cpu.step()
 
             # Check if values were pushed to the stack and SP was decremented correctly
-            self.assertEqual(self.cpu.sp, initial_sp - 2, f"{opcode=}")
-            self.assertEqual(self.memory.read_byte(self.cpu.sp), value_high, f"{opcode=}")
-            self.assertEqual(self.memory.read_byte(self.cpu.sp + 1), value_low, f"{opcode=}")
+            self.assertEqual( self.cpu.sp, initial_sp - 2, f"{opcode=}" )
+            self.assertEqual( self.memory.read_byte(self.cpu.sp), value_low, f"{opcode=}" )
+            self.assertEqual( self.memory.read_byte(self.cpu.sp + 1), value_high, f"{opcode=}" )
 
 if __name__ == '__main__':
     unittest.main()
