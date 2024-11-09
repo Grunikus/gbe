@@ -772,5 +772,26 @@ class TestCPU(unittest.TestCase):
                     self.assertEqual(self.cpu.registers[REGISTER_F], initial_flags, f"{opcode=}")
                     self.assertEqual(self.cpu.pc, expected_pc, f"{opcode=}")
 
+    def test_push_reg16(self):
+        for register_pair in ('BC', 'DE', 'HL', 'AF'):
+            opcode = getattr(opcodes, f"PUSH_{register_pair}" )
+            register_high = getattr(cpu, f"REGISTER_{register_pair[0:1]}" )
+            register_low  = getattr(cpu, f"REGISTER_{register_pair[-1:]}" )
+            value_high, value_low = self._random_byte(), self._random_byte()
+
+            # Set values in high and low registers for the pair
+            self.cpu.registers[register_high] = value_high
+            self.cpu.registers[register_low]  = value_low
+            initial_sp = self.cpu.sp
+
+            # Write the opcode and execute the push instruction
+            self.memory.write_byte(self.cpu.pc, opcode)
+            self.cpu.step()
+
+            # Check if values were pushed to the stack and SP was decremented correctly
+            self.assertEqual(self.cpu.sp, initial_sp - 2, f"{opcode=}")
+            self.assertEqual(self.memory.read_byte(self.cpu.sp), value_high, f"{opcode=}")
+            self.assertEqual(self.memory.read_byte(self.cpu.sp + 1), value_low, f"{opcode=}")
+
 if __name__ == '__main__':
     unittest.main()
