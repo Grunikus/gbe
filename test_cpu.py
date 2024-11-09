@@ -793,5 +793,27 @@ class TestCPU(unittest.TestCase):
             self.assertEqual( self.memory.read_byte(self.cpu.sp), value_low, f"{opcode=}" )
             self.assertEqual( self.memory.read_byte(self.cpu.sp + 1), value_high, f"{opcode=}" )
 
+    def test_pop_reg16(self):
+        for register_pair in ('BC', 'DE', 'HL', 'AF'):
+            opcode = getattr(opcodes, f"POP_{register_pair}")
+            register_high = getattr(cpu, f"REGISTER_{register_pair[0:1]}")
+            register_low  = getattr(cpu, f"REGISTER_{register_pair[-1:]}")
+            value_high, value_low = self._random_byte(), self._random_byte()
+
+            # Set up stack values in little-endian format and adjust the stack pointer
+            self.memory.write_byte(self.cpu.sp, value_low)
+            self.memory.write_byte(self.cpu.sp + 1, value_high)
+            initial_sp = self.cpu.sp
+
+            # Write the opcode and execute the pop instruction
+            self.memory.write_byte(self.cpu.pc, opcode)
+            self.cpu.step()
+
+            # Check if the values were loaded correctly into the registers
+            self.assertEqual(self.cpu.registers[register_low], value_low, f"{opcode=}")
+            self.assertEqual(self.cpu.registers[register_high], value_high, f"{opcode=}")
+            self.assertEqual(self.cpu.sp, initial_sp + 2, f"{opcode=}")
+
+
 if __name__ == '__main__':
     unittest.main()
