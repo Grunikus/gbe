@@ -814,6 +814,35 @@ class TestCPU(unittest.TestCase):
             self.assertEqual(self.cpu.registers[register_high], value_high, f"{opcode=}")
             self.assertEqual(self.cpu.sp, (initial_sp + 2) & 0xFFFF, f"{opcode=}")
 
+    def test_rst_instructions(self):
+        # Each RST instruction opcode and its corresponding target address
+        rst_targets = {
+            opcodes.RST_00H: 0x00,
+            opcodes.RST_08H: 0x08,
+            opcodes.RST_10H: 0x10,
+            opcodes.RST_18H: 0x18,
+            opcodes.RST_20H: 0x20,
+            opcodes.RST_28H: 0x28,
+            opcodes.RST_30H: 0x30,
+            opcodes.RST_38H: 0x38,
+        }
+
+        for opcode, target_address in rst_targets.items():
+            # Set up the initial program counter and stack pointer
+            initial_pc = self.cpu.pc
+            initial_sp = self.cpu.sp
+
+            # Write the opcode to memory and execute the RST instruction
+            self.memory.write_byte(initial_pc, opcode)
+            self.cpu.step()
+
+            # Check if PC was set to the target address
+            self.assertEqual(self.cpu.pc, target_address, f"{opcode=}")
+
+            # Verify if the previous PC value was pushed onto the stack (in little-endian)
+            self.assertEqual(self.cpu.sp, initial_sp - 2, f"{opcode=}")
+            self.assertEqual(self.memory.read_byte(self.cpu.sp), (initial_pc + 1) & 0xFF, f"{opcode=}")
+            self.assertEqual(self.memory.read_byte(self.cpu.sp + 1), (initial_pc + 1) >> 8, f"{opcode=}")
 
 if __name__ == '__main__':
     unittest.main()

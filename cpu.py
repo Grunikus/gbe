@@ -34,6 +34,7 @@ from opcodes import (
     LD__BC__A, LD_A__BC_, LD__DE__A, LD_A__DE_, LD__HL_INC__A, LD_A__HL_INC_, LD__HL_DEC__A, LD_A__HL_DEC_
     , POP_BC, POP_DE, POP_HL, POP_AF
     , PUSH_BC, PUSH_DE, PUSH_HL, PUSH_AF
+    , RST_00H, RST_08H, RST_10H, RST_18H, RST_20H, RST_28H, RST_30H, RST_38H
 )
 
 FLAG_Z = 0b10000000  # Zero Flag
@@ -133,6 +134,9 @@ class CPU:
         def _map_opcode_ld_register16_pairs_to_operation(opcode_register_groups, operation, **kwargs):
             for opcode, register_pair in opcode_register_groups:
                 self.INSTRUCTION_MAP[opcode] = lambda self, reg16=register_pair: operation(self, reg16, **kwargs)
+        def _map_opcode_rst(opcodes):
+            for opcode in opcodes:
+                self.INSTRUCTION_MAP[opcode] = lambda self, value=opcode-RST_00H: self._rst(value)
         # Define the opcode-register pairs and call add_instruction_map with the appropriate function and flags
         _map_opcode_inc_dec_16_pairs_to_operation( [(INC_BC, 'BC'), (INC_DE, 'DE'), (INC_HL, 'HL'), (INC_SP, 'sp')],
             lambda self, value: self._inc16(value) )
@@ -194,6 +198,7 @@ class CPU:
         _map_opcode_ld_register16_pairs_to_operation( [(LD_BC_IMM16, 'BC'), (LD_DE_IMM16, 'DE'), (LD_HL_IMM16, 'HL'), (LD_SP_IMM16, 'sp') ],
             lambda self, register16: self._ld_r16(register16, self._read_byte_from__pc__and_inc_pc() | (self._read_byte_from__pc__and_inc_pc() << 8) )
         )
+        _map_opcode_rst( [RST_00H, RST_08H, RST_10H, RST_18H, RST_20H, RST_28H, RST_30H, RST_38H] )
         self.INSTRUCTION_MAP[LD_SP_HL]     = lambda self: self._ld_r16('sp', self.HL )
         self.INSTRUCTION_MAP[POP_BC]       = lambda self: self._pop_r16( REGISTER_B, REGISTER_C )
         self.INSTRUCTION_MAP[POP_DE]       = lambda self: self._pop_r16( REGISTER_D, REGISTER_E )
@@ -539,3 +544,10 @@ class CPU:
         self.memory.write_byte( self.sp, self.registers[reg_h] )
         self.sp = (self.sp - 1) & 0xFFFF
         self.memory.write_byte( self.sp, self.registers[reg_l] )
+
+    def _rst(self, value):
+        self.sp = (self.sp - 1) & 0xFFFF
+        self.memory.write_byte( self.sp, (self.pc & 0xFF00) >> 8 )
+        self.sp = (self.sp - 1) & 0xFFFF
+        self.memory.write_byte( self.sp, self.pc & 0xFF )
+        self.pc = value
