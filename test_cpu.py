@@ -772,6 +772,45 @@ class TestCPU(unittest.TestCase):
                     self.assertEqual(self.cpu.registers[REGISTER_F], initial_flags, f"{opcode=}")
                     self.assertEqual(self.cpu.pc, expected_pc, f"{opcode=}")
 
+    def _setup_stack_and_execute_ret(self, return_address, opcode, stack_address, flag_state, expect_return):
+        initial_pc = self.cpu.pc
+        # Expected PC and SP after executing RET
+        expected_pc = (return_address if expect_return else initial_pc + 1) & 0xFFFF
+        expected_sp = (stack_address + 2 if expect_return else stack_address) & 0xFFFF
+
+        # Set up the stack with the return address (little-endian) and initial flags
+        self.cpu.registers[REGISTER_F] = flag_state
+        self.memory.write_byte(stack_address, return_address & 0xFF)
+        self.memory.write_byte(stack_address + 1 & 0xFFFF, return_address >> 8)
+        self.cpu.sp = stack_address
+
+        # Write the opcode and execute the RET instruction
+        self.memory.write_byte(self.cpu.pc, opcode)
+        self.cpu.step()
+
+        # Assertions for PC and SP
+        self.assertEqual(self.cpu.pc, expected_pc, f"{opcode=}")
+        self.assertEqual(self.cpu.sp, expected_sp, f"{opcode=}")
+        self.assertEqual(self.cpu.registers[REGISTER_F], flag_state, f"{opcode=}")  # Flags shouldn't change
+
+    def test_ret_instructions(self):
+        return_address = 0x1234
+        ret_conditions = {
+            opcodes.RET: (None, None),        # Unconditional return
+            opcodes.RET_NZ: (False, FLAG_Z),  # Return if Z flag is not set
+            opcodes.RET_Z: (True, FLAG_Z),    # Return if Z flag is set
+            opcodes.RET_NC: (False, FLAG_C),  # Return if C flag is not set
+            opcodes.RET_C: (True, FLAG_C),    # Return if C flag is set
+        }
+
+        for opcode, (condition_met, flag) in ret_conditions.items():
+            for flag_state in (0, flag):
+                stack_address = self.cpu.sp  # Assuming stack starts at initial SP
+                expect_return = True if condition_met is None else (bool(flag_state & flag) == condition_met)
+
+                # Execute the RET test with specified flags and check conditions
+                self._setup_stack_and_execute_ret(return_address, opcode, stack_address, flag_state, expect_return)
+
     def test_push_reg16(self):
         for register_pair in ('BC', 'DE', 'HL', 'AF'):
             opcode = getattr(opcodes, f"PUSH_{register_pair}" )

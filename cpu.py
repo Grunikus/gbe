@@ -34,6 +34,8 @@ from opcodes import (
     LD__BC__A, LD_A__BC_, LD__DE__A, LD_A__DE_, LD__HL_INC__A, LD_A__HL_INC_, LD__HL_DEC__A, LD_A__HL_DEC_
     , POP_BC, POP_DE, POP_HL, POP_AF
     , PUSH_BC, PUSH_DE, PUSH_HL, PUSH_AF
+    , RET_NZ, RET_Z, RET, RET_C, RET_NC
+    # , RETI
     , RST_00H, RST_08H, RST_10H, RST_18H, RST_20H, RST_28H, RST_30H, RST_38H
 )
 
@@ -101,6 +103,12 @@ class CPU:
         self.INSTRUCTION_MAP[JR_NZ_IMM] = lambda self: self._jr( self._read_byte_from__pc__and_inc_pc(), _not=True, zero = True )
         self.INSTRUCTION_MAP[JR_C_IMM]  = lambda self: self._jr( self._read_byte_from__pc__and_inc_pc()           , carry= True )
         self.INSTRUCTION_MAP[JR_NC_IMM] = lambda self: self._jr( self._read_byte_from__pc__and_inc_pc(), _not=True, carry= True )
+        self.INSTRUCTION_MAP[RET]    = lambda self: self._ret(                        )
+        self.INSTRUCTION_MAP[RET_Z]  = lambda self: self._ret(            zero = True )
+        self.INSTRUCTION_MAP[RET_NZ] = lambda self: self._ret( _not=True, zero = True )
+        self.INSTRUCTION_MAP[RET_C]  = lambda self: self._ret(            carry= True )
+        self.INSTRUCTION_MAP[RET_NC] = lambda self: self._ret( _not=True, carry= True )
+        # self.INSTRUCTION_MAP[RETI]    = lambda self: self._reti( )
         self.INSTRUCTION_MAP[RLCA] = lambda self: self._rotate_a()
         self.INSTRUCTION_MAP[RRCA] = lambda self: self._rotate_a(left=False)
         self.INSTRUCTION_MAP[RLA]  = lambda self: self._rotate_a(carry=False)
@@ -252,6 +260,34 @@ class CPU:
                 )
             ) ):
             self.pc = (self.pc + byte) & 0xFFFF
+
+    def _ret(self, _not=False, zero=False, carry=False ):
+        """
+        Pop from the memory stack the program counter PC value pushed when the subroutine was called, returning control to the source program.
+
+        The contents of the address specified by the stack pointer SP are loaded in the lower-order byte of PC, and the contents of SP are incremented by 1.
+        The contents of the address specified by the new SP value are then loaded in the higher-order byte of PC, and the contents of SP are incremented by 1 again.
+        (The value of SP is 2 larger than before instruction execution.) The next instruction is fetched from the address specified by the content of PC (as usual).
+        """
+        if( (
+                not zero and not carry
+            ) or (
+                zero and (
+                    ( not _not and (self.registers[REGISTER_F]&FLAG_Z) )
+                    or
+                    ( _not and not (self.registers[REGISTER_F]&FLAG_Z) )
+                )
+            ) or (
+                carry and (
+                    ( not _not and (self.registers[REGISTER_F]&FLAG_C) )
+                    or
+                    ( _not and not (self.registers[REGISTER_F]&FLAG_C) )
+                )
+            ) ):
+            self.pc = self.memory.read_byte( self.sp )
+            self.sp = (self.sp + 1) & 0xFFFF
+            self.pc |= (self.memory.read_byte( self.sp ) << 8)
+            self.sp = (self.sp + 1) & 0xFFFF
 
     def _rotate_a(self, left=True, carry=True):
 
