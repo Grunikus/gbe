@@ -4,6 +4,7 @@ from opcodes import (
     NOP,
     JR_IMM, JR_Z_IMM, JR_NZ_IMM, JR_C_IMM, JR_NC_IMM,
     JP_NZ, JP_ADDR, JP_Z, JP_C, JP_NC,
+    JP_HL,
     RLCA, RRCA, RLA, RRA,
     DAA, CPL, SCF, CCF,
     INC_BC, DEC_BC, INC_DE, DEC_DE, INC_HL, DEC_HL, INC_SP, DEC_SP,
@@ -109,6 +110,7 @@ class CPU:
         self.INSTRUCTION_MAP[JP_NZ]     = lambda self: self._jp( self._read_byte_from__pc__and_inc_pc(), self._read_byte_from__pc__and_inc_pc(), _not=True, zero = True )
         self.INSTRUCTION_MAP[JP_C]      = lambda self: self._jp( self._read_byte_from__pc__and_inc_pc(), self._read_byte_from__pc__and_inc_pc()           , carry= True )
         self.INSTRUCTION_MAP[JP_NC]     = lambda self: self._jp( self._read_byte_from__pc__and_inc_pc(), self._read_byte_from__pc__and_inc_pc(), _not=True, carry= True )
+        self.INSTRUCTION_MAP[JP_HL]     = lambda self: self._jp( self.registers[REGISTER_L], self.registers[REGISTER_H]         )
         self.INSTRUCTION_MAP[RET]    = lambda self: self._ret(                        )
         self.INSTRUCTION_MAP[RET_Z]  = lambda self: self._ret(            zero = True )
         self.INSTRUCTION_MAP[RET_NZ] = lambda self: self._ret( _not=True, zero = True )

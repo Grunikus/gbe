@@ -796,6 +796,31 @@ class TestCPU(unittest.TestCase):
                         self.assertEqual(self.cpu.registers[REGISTER_F], initial_flags, f"{opcode=}")
                         self.assertEqual(self.cpu.pc, expected_pc, f"{opcode=}")
 
+    def test_jp_hl(self):
+        opcode = opcodes.JP_HL
+        # Set a random value in the HL register pair
+        for flags in range(0, 0b1111):
+            initial_flags = flags << 4
+            self.cpu.registers[REGISTER_F] = initial_flags
+            for offset_lo in range(0, 0xFF):
+                for offset_hi in range(0, 0xFF):
+                    initial_pc = self.cpu.pc
+                    hl_address = (offset_hi << 8) | offset_lo
+                    self.cpu.registers[REGISTER_H] = offset_hi
+                    self.cpu.registers[REGISTER_L] = offset_lo
+
+                    # Write the JP HL opcode and execute the instruction
+                    self.memory.write_byte(self.cpu.pc, opcode)
+                    self.cpu.step()
+
+                    # Assert that the PC is now equal to the value in HL
+                    self.assertEqual(self.cpu.pc, hl_address, f"{opcode=}")
+                    # Assert that the registers and memory remain unchanged
+                    self.assertEqual(self.cpu.registers[REGISTER_H], (hl_address >> 8) & 0xFF)
+                    self.assertEqual(self.cpu.registers[REGISTER_L], hl_address & 0xFF)
+                    self.assertEqual(self.memory.read_byte(initial_pc), opcode)
+                    self.assertEqual(self.cpu.registers[REGISTER_F], initial_flags, f"{opcode=}")
+
     def _setup_stack_and_execute_ret(self, return_address, opcode, stack_address, flag_state, expect_return):
         initial_pc = self.cpu.pc
         # Expected PC and SP after executing RET
