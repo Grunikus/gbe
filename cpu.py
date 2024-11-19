@@ -3,6 +3,7 @@ from memory import Memory
 from opcodes import (
     NOP,
     JR_IMM, JR_Z_IMM, JR_NZ_IMM, JR_C_IMM, JR_NC_IMM,
+    JP_NZ, JP_ADDR, JP_Z, JP_C, JP_NC,
     RLCA, RRCA, RLA, RRA,
     DAA, CPL, SCF, CCF,
     INC_BC, DEC_BC, INC_DE, DEC_DE, INC_HL, DEC_HL, INC_SP, DEC_SP,
@@ -103,6 +104,11 @@ class CPU:
         self.INSTRUCTION_MAP[JR_NZ_IMM] = lambda self: self._jr( self._read_byte_from__pc__and_inc_pc(), _not=True, zero = True )
         self.INSTRUCTION_MAP[JR_C_IMM]  = lambda self: self._jr( self._read_byte_from__pc__and_inc_pc()           , carry= True )
         self.INSTRUCTION_MAP[JR_NC_IMM] = lambda self: self._jr( self._read_byte_from__pc__and_inc_pc(), _not=True, carry= True )
+        self.INSTRUCTION_MAP[JP_ADDR]   = lambda self: self._jp( self._read_byte_from__pc__and_inc_pc(), self._read_byte_from__pc__and_inc_pc()                         )
+        self.INSTRUCTION_MAP[JP_Z]      = lambda self: self._jp( self._read_byte_from__pc__and_inc_pc(), self._read_byte_from__pc__and_inc_pc()           , zero = True )
+        self.INSTRUCTION_MAP[JP_NZ]     = lambda self: self._jp( self._read_byte_from__pc__and_inc_pc(), self._read_byte_from__pc__and_inc_pc(), _not=True, zero = True )
+        self.INSTRUCTION_MAP[JP_C]      = lambda self: self._jp( self._read_byte_from__pc__and_inc_pc(), self._read_byte_from__pc__and_inc_pc()           , carry= True )
+        self.INSTRUCTION_MAP[JP_NC]     = lambda self: self._jp( self._read_byte_from__pc__and_inc_pc(), self._read_byte_from__pc__and_inc_pc(), _not=True, carry= True )
         self.INSTRUCTION_MAP[RET]    = lambda self: self._ret(                        )
         self.INSTRUCTION_MAP[RET_Z]  = lambda self: self._ret(            zero = True )
         self.INSTRUCTION_MAP[RET_NZ] = lambda self: self._ret( _not=True, zero = True )
@@ -236,7 +242,7 @@ class CPU:
 
     def _read_byte_from__pc__and_inc_pc(self):
         value = self.memory.read_byte(self.pc)
-        self.pc += 1 & 0xFFFF
+        self.pc = (self.pc + 1) & 0xFFFF
         return value
 
     def step(self):
@@ -260,6 +266,24 @@ class CPU:
                 )
             ) ):
             self.pc = (self.pc + byte) & 0xFFFF
+
+    def _jp(self, byte_lo, byte_hi, _not=False, zero=False, carry=False ):
+        if( (
+                not zero and not carry
+            ) or (
+                zero and (
+                    ( not _not and (self.registers[REGISTER_F]&FLAG_Z) )
+                    or
+                    ( _not and not (self.registers[REGISTER_F]&FLAG_Z) )
+                )
+            ) or (
+                carry and (
+                    ( not _not and (self.registers[REGISTER_F]&FLAG_C) )
+                    or
+                    ( _not and not (self.registers[REGISTER_F]&FLAG_C) )
+                )
+            ) ):
+            self.pc = (byte_hi << 8) + byte_lo
 
     def _ret(self, _not=False, zero=False, carry=False ):
         """

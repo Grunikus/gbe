@@ -772,6 +772,30 @@ class TestCPU(unittest.TestCase):
                     self.assertEqual(self.cpu.registers[REGISTER_F], initial_flags, f"{opcode=}")
                     self.assertEqual(self.cpu.pc, expected_pc, f"{opcode=}")
 
+    def test_jp(self):
+        for opcode in (opcodes.JP_ADDR, opcodes.JP_Z, opcodes.JP_NZ, opcodes.JP_C, opcodes.JP_NC):
+            jr_if_true = opcode in (opcodes.JP_Z, opcodes.JP_C)
+            comparison_flag = FLAG_Z if opcode in (opcodes.JP_Z, opcodes.JP_NZ) else FLAG_C
+            if opcode == opcodes.JP_ADDR:
+                expect_jump = True
+            for flags in range(0, 0b1111):
+                initial_flags = flags << 4
+                if opcode != opcodes.JP_ADDR:
+                    expect_jump = jr_if_true if (initial_flags&comparison_flag) else not jr_if_true
+                # This takes a while...
+                for offset_lo in range(0, 0xFF):
+                    for offset_hi in range(0, 0xFF):
+                        initial_pc = self.cpu.pc
+                        expected_pc = (((offset_hi << 8) + offset_lo) if expect_jump else initial_pc + 3) & 0xFFFF
+
+                        self.cpu.registers[REGISTER_F] = initial_flags
+                        self.memory.write_byte(self.cpu.pc, opcode)
+                        self.memory.write_byte((self.cpu.pc + 1) & 0xFFFF, offset_lo)
+                        self.memory.write_byte((self.cpu.pc + 2) & 0xFFFF, offset_hi)
+                        self.cpu.step()
+                        self.assertEqual(self.cpu.registers[REGISTER_F], initial_flags, f"{opcode=}")
+                        self.assertEqual(self.cpu.pc, expected_pc, f"{opcode=}")
+
     def _setup_stack_and_execute_ret(self, return_address, opcode, stack_address, flag_state, expect_return):
         initial_pc = self.cpu.pc
         # Expected PC and SP after executing RET
